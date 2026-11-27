@@ -66,19 +66,48 @@ jobs:
           chmod +x ./gradlew
           ./gradlew build --stacktrace --continue --no-daemon 2>&1 | tee /tmp/gradle-build.log
 
+      # Everything below is tuned so the *reason* for a failure fits inside an
+      # annotation. Logs and artifacts are unreachable from some environments,
+      # and an earlier attempt matched Gradle task names ("Task :buildSrc:...")
+      # instead of the error, which told a reader nothing. So: find the
+      # "What went wrong" block, strip Gradle's decorative characters, and put
+      # that in the annotation itself.
       - name: Emit the error digest
         if: failure()
         run: |
           echo "=== why it failed ==="
-          test -f /tmp/gradle-build.log || { echo "::error::no build log was produced"; exit 0; }
-          # First failure and what went wrong, as annotations so they survive
-          # without artifact access.
-          grep -nE "What went wrong|Could not (resolve|find|create|open)|Could not determine|FAILURE:|Caused by:|^> |error:|requires|not found" /tmp/gradle-build.log \
-            | head -30 \
-            | sed 's/\\/\\\\/g; s/%/%25/g; s/\r//g' \
-            | while IFS= read -r line; do echo "::error title=Gradle::${line}"; done || true
-          echo "=== last 40 lines ==="
-          tail -40 /tmp/gradle-build.log || true
+          if [ ! -f /tmp/gradle-build.log ]; then
+            echo "::error title=Build::no build log was produced"
+            exit 0
+          fi
+
+          # Pull out the paragraph after "What went wrong", which is where
+          # Gradle prints the actual cause, plus any Caused by line.
+          ERR=$(awk '/^\* What went wrong:/{f=1;next} f&&/^\* Try:/{exit} f' /tmp/gradle-build.log \
+                | sed 's/^[>-]* *//' | grep -v '^$' | head -12)
+          CAUSE=$(grep -E "^Caused by:" /tmp/gradle-build.log | head -3)
+          FIRST=$(grep -nE "> Could not |Could not resolve all|UnsupportedClassVersionError|Could not find |Could not create " /tmp/gradle-build.log | head -3)
+
+          emit() {
+            # ::error:: is one line; collapse newlines and escape % and CR.
+            printf '%s' "$1" | tr '\n' ' ' | sed 's/%/%25/g; s/\r//g' | cut -c1-900
+          }
+
+          if [ -n "$ERR" ]; then
+            echo "::error title=Gradle — what went wrong::$(emit "$ERR")"
+          fi
+          if [ -n "$CAUSE" ]; then
+            echo "::error title=Gradle — caused by::$(emit "$CAUSE")"
+          fi
+          if [ -n "$FIRST" ]; then
+            echo "::error title=Gradle — first error line::$(emit "$FIRST")"
+          fi
+          if [ -z "$ERR$CAUSE$FIRST" ]; then
+            echo "::error title=Gradle — unclassified::$(emit "$(tail -25 /tmp/gradle-build.log)")"
+          fi
+
+          echo "--- last 30 lines, for the record ---"
+          tail -30 /tmp/gradle-build.log || true
 
       - name: Upload the build log
         if: always()
