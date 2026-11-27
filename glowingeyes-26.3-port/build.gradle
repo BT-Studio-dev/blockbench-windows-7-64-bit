@@ -1,6 +1,11 @@
 plugins {
     // see https://fabricmc.net/develop/ for new versions
-    id 'fabric-loom' version '1.14-SNAPSHOT' apply false
+    // 26.x has no mappings to remap against, so plain fabric-loom cannot work:
+    // it refuses to configure without a mappings dependency, and the only
+    // mappings to request (Mojang's obfuscation map) no longer exist. This is
+    // the same wall the 26.3 branch of Reactions ran into, and the same plugin
+    // gets past it.
+    id 'dev.architectury.loom' version '1.14.476' apply false
     // see https://projects.neoforged.net/neoforged/moddevgradle for new versions
     id 'net.neoforged.moddev' version '2.0.140' apply false
 
