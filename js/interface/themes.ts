@@ -210,6 +210,25 @@ export class CustomTheme {
 					},
 					'import_theme',
 					'export_theme',
+					{
+						// Editing a built-in theme used to only write over the stored
+						// theme, so the colours changed but there was no way to keep
+						// them as a theme of their own. This turns the current edits
+						// into a custom theme. It was already possible through the name
+						// field, except that field only appears once a theme is custom,
+						// which could never happen from a built-in one.
+						name: 'layout.theme.save_as_new',
+						icon: 'fa-copy',
+						click() {
+							if (CustomTheme.selected.source == 'custom') {
+								CustomTheme.selected.save();
+								Blockbench.showQuickMessage(tl('message.theme.saved', undefined, 'Theme saved'));
+								return;
+							}
+							CustomTheme.customizeTheme();
+							Blockbench.showQuickMessage(tl('message.theme.saved_as_new', undefined, 'Saved as a new custom theme. Pick it under Select to keep it.'));
+						}
+					},
 				],
 				onPageSwitch(page) {
 					CustomTheme.dialog.content_vue.open_category = page;
@@ -391,7 +410,10 @@ export class CustomTheme {
 				computed: {
 					listed_themes() {
 						let themes = this.themes.slice();
-						if (this.data.source == 'custom') {
+						// Show the theme being edited at the top, but only when it is not
+						// in the list already. Custom themes are registered in `themes`
+						// now, so an unconditional insert listed them twice.
+						if (this.data.source == 'custom' && !themes.includes(this.data)) {
 							themes.splice(0, 0, this.data);
 						}
 						return themes;
@@ -590,9 +612,15 @@ export class CustomTheme {
 				i++;
 				theme.id = 'custom_theme_'+i;
 			}
+			// Register the copy, otherwise it exists only as the active theme and
+			// never shows up in the Select grid, so it is lost as soon as another
+			// theme is picked. `listed_themes` reads this array.
+			CustomTheme.themes.push(theme);
 			if (CustomTheme.dialog.content_vue) CustomTheme.dialog.content_vue.data = theme;
 			theme.load();
+			return theme;
 		}
+		return CustomTheme.selected;
 	}
 	static updateColors() {		
 		$('meta[name=theme-color]').attr('content', CustomTheme.selected.colors.frame);
@@ -830,6 +858,37 @@ export class CustomTheme {
 	}
 	save() {
 		localStorage.setItem('theme', JSON.stringify(this));
+		// A custom theme is one the user made and expects to keep, so it also
+		// goes into the list that is restored on startup. The `theme` key only
+		// holds whichever theme is active, so on its own it would lose every
+		// other custom theme as soon as a different one was picked.
+		if (this.source == 'custom') {
+			CustomTheme.saveCustomThemes();
+		}
+	}
+	static saveCustomThemes() {
+		let custom = CustomTheme.themes.filter(theme => theme.source == 'custom');
+		try {
+			localStorage.setItem('custom_themes', JSON.stringify(custom));
+		} catch (err) {
+			console.error('Could not store custom themes', err);
+		}
+	}
+	static loadCustomThemes() {
+		let raw = localStorage.getItem('custom_themes');
+		if (!raw) return;
+		try {
+			let stored = JSON.parse(raw);
+			if (!(stored instanceof Array)) return;
+			stored.forEach(data => {
+				let theme = new CustomTheme(data);
+				theme.source = 'custom';
+				if (!theme.id || CustomTheme.themes.find(t2 => t2.id == theme.id)) return;
+				CustomTheme.themes.push(theme);
+			});
+		} catch (err) {
+			console.error('Could not restore custom themes', err);
+		}
 	}
 };
 
@@ -959,6 +1018,11 @@ export function loadThemes() {
 			stored_theme_data = JSON.parse(localStorage.getItem('theme'))
 		}
 	} catch (err) {}
+
+	// Restore saved custom themes before the stored theme is resolved, so a
+	// custom theme that was active when the app closed can be found by id
+	// instead of silently falling back to a built-in theme.
+	CustomTheme.loadCustomThemes();
 
 	// "Sync with system" wins over the stored theme at boot, so the editor opens
 	// in whichever appearance the desktop is using rather than flashing the

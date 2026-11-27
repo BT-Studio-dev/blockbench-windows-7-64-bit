@@ -2987,5 +2987,8 @@
 	"preview_model.transform": "Transform",
 	"preview_model.reset_transform": "Reset Transform",
 	"preview_model.minecraft_player": "Minecraft Player",
-	"preview_model.minecraft_crafting_table": "Minecraft Crafting Table"
+	"preview_model.minecraft_crafting_table": "Minecraft Crafting Table",
+	"layout.theme.save_as_new": "Save as new theme",
+	"message.theme.saved": "Theme saved",
+	"message.theme.saved_as_new": "Saved as a new custom theme. Pick it under Select to keep it."
 }
