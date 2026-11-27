@@ -9,9 +9,66 @@ Started from the `1.21.11` branch (commit `d8d0d02`). Read this before building.
 | Toolchain versions | **done** |
 | Mixin compatibility level | **done** |
 | `fabric.mod.json` version range | **done** |
-| CI workflow for JDK 25 | **done** |
-| Compile | **not run** — needs CI or a local JDK 25 |
-| Source port | **not started** — see below |
+| CI workflow for JDK 25 | **done, and running** |
+| Gradle configuration | **done** — 10 errors fixed from real CI output |
+| Compile | **reached javac** — 201 errors, all source-level |
+| Source port | **not started** — this is now the whole remaining job |
+
+## Where the build actually stands
+
+Configuration is finished. The four blockers that the first real compiler output
+surfaced, in the order they appeared, are all resolved:
+
+| Error | Fix |
+| --- | --- |
+| `Could not get unknown property 'neo_form_version'` | `common` sets `version = neoforge_version`; 26.x has no NeoForm |
+| `Failed to find official mojang mappings for 26.3` | removed `loom.officialMojangMappings()` -- there are none to find |
+| `Configuration 'mappings' has no dependencies` | moved to `dev.architectury.loom-no-remap` |
+| `was not found in any of the following sources` | `useModule` redirect + `maven.architectury.dev` |
+| `Could not find de.oceanlabs.mcp:mcinjector` | unfiltered `files.minecraftforge.net/maven` |
+| `Could not find method modApi()` | `api`/`implementation`/`compileOnly`; no-remap has no remap configs |
+| `found: intermediary in mod: flashback` | Flashback disabled -- see `disabled-for-26.3/` |
+| `Expected official namespace ... found: named` | access widener header, then |
+| `Expected 'classTweaker <version> <namespace>'` | `classTweaker v1 official`, on line 1 |
+| `Unsupported class tweaker format: v2` | `v1` |
+
+Everything after that is Java.
+
+## The source port, measured
+
+The compiler now produces **201 error lines**. Counted by missing symbol:
+
+| Missing | Occurrences |
+| --- | --- |
+| `GuiGraphics` | 135 |
+| `RenderPipeline` | 24 |
+| `VertexFormat`, `GpuTexture`, `GpuBuffer`, `GameLoadCookie`, `GLX`, `CommandEncoder`, `BlendFunction` | 3 each |
+| `package org.lwjgl.glfw` | 9 |
+| `package com.mojang.blaze3d.textures` | 6 |
+
+**`GuiGraphics` is the headline and it is not a rename.** It has existed since
+1.20.2 and 135 sites depend on it; before 26.3 it disappeared. Every GUI in the
+mod -- the pixel editor, the preset picker, the skin part selector, the colour
+picker -- is written against it. Guessing at a replacement and calling the result
+"ported" would be the exact dishonesty this document exists to avoid.
+
+The next three in the list (`RenderPipeline`, `GpuTexture`, `GpuBuffer`,
+`CommandEncoder`, `BlendFunction`) are the custom shader path: the mod ships
+`color_square` and `hue_bar` shaders in `assets/glowingeyes/shaders/core/`, and
+those are now built through a different pipeline abstraction.
+
+## What is needed to finish it
+
+1. A reference for what replaced `GuiGraphics` -- either a working 26.3 GUI mod,
+   or the 26.3 client jar to read. Neither is reachable from the environment that
+   produced this.
+2. Then the compiler is the guide: fix, push, read the next 25 errors, repeat.
+   The loop is already automated; each push reports the distinct missing symbols
+   and the first error lines as annotations.
+3. Only after `:common` compiles does the render path get exercised, which is
+   where the two descriptor-based mixins may still fail silently.
+
+Nothing in this port has been run in a game.
 
 ## Version numbers, and where they came from
 
