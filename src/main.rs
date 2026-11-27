@@ -3,17 +3,20 @@
 //! How requests reach this binary, in order:
 //!
 //! 1. The Rust framework preset builds `src/main.rs` and asks `@vercel/rust`
-//!    for its route table. For a `vercel_runtime` project that table is
-//!    `[{ handle: "filesystem" }, { src: "/(.*)", dest: "/src/main" }]`.
+//!    for its route table. For a project that depends on `vercel_runtime` that
+//!    table is `[{ handle: "filesystem" }, { src: "/(.*)", dest: "/src/main" }]`.
 //! 2. So the CDN answers first: any request that matches a file in `public/`
 //!    is served as a static asset and never reaches this process. That is how
-//!    the multi-megabyte bundle, fonts and translations are delivered, well
-//!    away from the 4.5 MB function payload limit.
+//!    the 8.6 MB editor bundle, fonts and translations are delivered, well away
+//!    from the 4.5 MB limit on function request and response payloads.
 //! 3. Everything else arrives here, and this file owns HTML fallbacks,
-//!    redirects, headers and the JSON API.
+//!    redirects and the JSON API.
 //!
-//! Nothing here reads files from disk: the static files live in `public/` and
-//! the function's own filesystem is read-only apart from `/tmp`.
+//! Nothing here reads files from disk: the function's filesystem is read-only
+//! apart from `/tmp`, and the static files live in `public/`.
+//!
+//! Build note: `build-info.json` is embedded at compile time, so the build
+//! command has to run `scripts/site.mjs` before this crate compiles.
 
 use std::env;
 use std::time::{SystemTime, UNIX_EPOCH};
@@ -24,15 +27,12 @@ use vercel_runtime::{run, service_fn, Error, Request, Response, ResponseBody};
 /// runs as part of the Vercel build command.
 const BUILD_INFO: &str = include_str!("../build-info.json");
 
-/// Chat endpoint, kept next to the other API routes.
-const CHAT_PATH: &str = "/api/blockbench/chat";
+/// The editor lives at the site root. Paths that are not files are treated as
+/// client-side routes and redirected there.
+const EDITOR_PATH: &str = "/";
 
-/// How many messages the chat endpoint will accept in one conversation, so a
-/// single request cannot grow without bound.
-const CHAT_MAX_MESSAGES: usize = 40;
-
-/// How long a single chat message may be, in characters.
-const CHAT_MAX_CHARS: usize = 4000;
+/// The download page, a static file at `public/download/index.html`.
+const DOWNLOAD_PATH: &str = "/download/";
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -43,72 +43,38 @@ async fn handler(req: Request) -> Result<Response<ResponseBody>, Error> {
     let path = req.uri().path().to_owned();
     let method = req.method().as_str().to_owned();
 
-    let response = match path.as_str() {
-        "/api/blockbench/health" => {
-            Ok(json(200, &health_json()))
-        }
+    match path.as_str() {
+        "/api/blockbench/health" => Ok(json(200, &health_json())),
         "/api/blockbench/version" => Ok(json(200, &version_json())),
-        CHAT_PATH if method == "POST" => chat(req).await,
-        // The editor document and the download page are static files, so the
-        // CDN normally answers these. They are listed here so the function
-        // still behaves if the static phase is ever bypassed.
-        "/" | "/index.html" | "/download" | "/download/" => app_shell(&path),
-        _ if path.starts_with("/api/") => {
-            Ok(json(404, r#"{"error":"Unknown API route"}"#))
+        _ if path.starts_with("/api/") => Ok(json(404, &error_json("Unknown API route"))),
+        _ if method != "GET" && method != "HEAD" => {
+            Ok(json(405, &error_json("Method not allowed")))
         }
-        // A trailing slash on a static asset means a directory the CDN did not
-        // match, which is a missing file rather than a page.
+        // A path with a file extension that reached this point is a missing
+        // asset, not a page: the CDN would have served it otherwise.
         _ if has_file_extension(&path) => Ok(not_found_html()),
-        // Anything else is a client-side route: hand back the app shell so the
-        // editor can read the location instead of showing a Vercel 404.
-        _ => app_shell(&path),
-    };
-
-    response
-}
-
-// ---------------------------------------------------------------------------
-// Routes
-// ---------------------------------------------------------------------------
-
-/// The editor document lives at the site root, so any page route that no
-/// static file backs is a client-side view of the editor. Send the browser
-/// there instead of showing a 404, keeping the requested path in the query so
-/// the app can reopen the right view.
-fn app_shell(requested_path: &str) -> Result<Response<ResponseBody>, Error> {
-    let known = matches!(
-        requested_path,
-        "/" | "/index.html" | "/download" | "/download/"
-    );
-
-    if !known {
-        let target = format!("/?route={}", encode_query(requested_path));
-        let builder = Response::builder()
-            .status(307)
-            .header("location", target)
-            .header("cache-control", "no-store");
-        return Ok(response_from(builder, String::new()));
+        // Known page documents. The static phase normally answers these, so
+        // arriving here means it did not run.
+        "/" | "/index.html" | "/download" | "/download/" => Ok(static_missing_html()),
+        // Every other path is a client-side route of the editor.
+        _ => Ok(redirect_to_editor(&path)),
     }
-
-    // A static file answered for these paths, so reaching this point means the
-    // static phase did not run. Say so plainly instead of rendering a blank
-    // page that looks like a Blockbench bug.
-    let builder = Response::builder()
-        .status(503)
-        .header("content-type", "text/html; charset=utf-8")
-        .header("cache-control", "no-store");
-    Ok(response_from(
-        builder,
-        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Blockbench</title>\
-</head><body><h1>Static assets are missing</h1>\
-<p>The editor files were not found in <code>public/</code>. Re-run the build.</p>\
-</body></html>"
-            .to_owned(),
-    ))
 }
 
-/// Percent-encodes a path for use as a query value, so a route that already
-/// contains `&` or `?` cannot break the redirect.
+/// Sends a client-side route to the editor, keeping the requested path so the
+/// app can restore the view instead of showing a 404.
+fn redirect_to_editor(requested_path: &str) -> Response<ResponseBody> {
+    let target = format!("{EDITOR_PATH}?route={}", encode_query(requested_path));
+    Response::builder()
+        .status(307)
+        .header("location", target)
+        .header("cache-control", "no-store")
+        .body(ResponseBody::from(String::new()))
+        .expect("a redirect response is always valid")
+}
+
+/// Percent-encodes a path for use as a query value, so a route containing `&`
+/// or `?` cannot break the redirect.
 fn encode_query(value: &str) -> String {
     let mut encoded = String::with_capacity(value.len());
     for byte in value.bytes() {
@@ -122,180 +88,6 @@ fn encode_query(value: &str) -> String {
     encoded
 }
 
-// ---------------------------------------------------------------------------
-// API
-// ---------------------------------------------------------------------------
-
-/// Anthropic-compatible chat endpoint.
-///
-/// The browser never sees the API key. Requests are accepted only when this
-/// function runs with `ANTHROPIC_API_KEY` in its environment, and the reply is
-/// passed straight through so the client can use it unchanged. Without a key
-/// the endpoint reports that it is not configured, which is a 503 rather than
-/// a 500 so the site can tell the two apart.
-async fn chat(req: Request) -> Result<Response<ResponseBody>, Error> {
-    let (_, body) = req.into_parts();
-    let raw = match read_body(body).await {
-        Ok(raw) => raw,
-        Err(message) => return Ok(json(400, &error_json(&message))),
-    };
-
-    // Shape check only. The provider validates the full schema, and copying it
-    // here would drift the moment the model list changes.
-    let parsed: serde_json::Value = match serde_json::from_str(&raw) {
-        Ok(value) => value,
-        Err(_) => return Ok(json(400, &error_json("Body must be JSON"))),
-    };
-
-    let messages = parsed
-        .get("messages")
-        .and_then(|value| value.as_array())
-        .map(|value| value.len())
-        .unwrap_or(0);
-    if messages == 0 {
-        return Ok(json(400, &error_json("messages must be a non-empty array")));
-    }
-    if messages > CHAT_MAX_MESSAGES {
-        return Ok(json(
-            400,
-            &error_json(&format!(
-                "Conversation is limited to {CHAT_MAX_MESSAGES} messages"
-            )),
-        ));
-    }
-    let characters: usize = parsed
-        .get("messages")
-        .and_then(|value| value.as_array())
-        .map(|messages| {
-            messages
-                .iter()
-                .filter_map(|message| message.get("content"))
-                .map(character_count)
-                .sum()
-        })
-        .unwrap_or(0);
-    if characters > CHAT_MAX_CHARS {
-        return Ok(json(
-            400,
-            &error_json(&format!(
-                "Message is limited to {CHAT_MAX_CHARS} characters"
-            )),
-        ));
-    }
-
-    let api_key = match env::var("ANTHROPIC_API_KEY") {
-        Ok(key) if !key.trim().is_empty() => key,
-        _ => {
-            return Ok(json(
-                503,
-                r#"{"error":"The chat feature is not configured on this deployment. Set ANTHROPIC_API_KEY to enable it."}"#,
-            ))
-        }
-    };
-
-    // The Messages API is called over plain HTTP so this crate keeps a small
-    // dependency tree; the function already runs in a Tokio runtime, which is
-    // exactly what the request needs.
-    let payload = serde_json::json!({
-        "model": env::var("ANTHROPIC_MODEL").unwrap_or_else(|_| "claude-sonnet-4-20250514".into()),
-        "max_tokens": 1024,
-        "messages": parsed.get("messages").cloned().unwrap_or(serde_json::json!([])),
-        "system": parsed.get("system").cloned().unwrap_or(serde_json::Value::Null),
-    });
-
-    match post_anthropic(&api_key, &payload.to_string()).await {
-        Ok((status, text)) => Ok(json(status, &text)),
-        Err(message) => Ok(json(502, &error_json(&message))),
-    }
-}
-
-async fn post_anthropic(api_key: &str, payload: &str) -> Result<(u16, String), String> {
-    let request = http::Request::builder()
-        .method("POST")
-        .uri("https://api.anthropic.com/v1/messages")
-        .header("content-type", "application/json")
-        .header("x-api-key", api_key)
-        .header("anthropic-version", "2023-06-01")
-        .body(payload.to_owned())
-        .map_err(|error| error.to_string())?;
-
-    // `hyper` is already in the tree through vercel_runtime, so the client is
-    // built on the versions that are known to resolve together.
-    let client = hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
-        .build(hyper_util::client::legacy::connect::HttpConnector::new());
-
-    let response = client
-        .request(request)
-        .await
-        .map_err(|error| format!("Upstream request failed: {error}"))?;
-    let status = response.status().as_u16();
-    let text = read_body(response.into_body())
-        .await
-        .map_err(|error| format!("Upstream body could not be read: {error}"))?;
-    Ok((status, text))
-}
-
-async fn read_body<B>(body: B) -> Result<String, String>
-where
-    B: http_body::Body,
-    B::Error: std::fmt::Display,
-    B::Data: Into<Vec<u8>>,
-{
-    use http_body_util::BodyExt;
-
-    let collected = body.collect().await.map_err(|error| error.to_string())?;
-    let bytes: Vec<u8> = collected.to_bytes().to_vec();
-    String::from_utf8(bytes).map_err(|_| "Body is not valid UTF-8".to_owned())
-}
-
-fn character_count(value: &serde_json::Value) -> usize {
-    match value {
-        serde_json::Value::String(text) => text.chars().count(),
-        serde_json::Value::Array(items) => items.iter().map(character_count).sum(),
-        serde_json::Value::Object(fields) => fields
-            .get("text")
-            .map(character_count)
-            .unwrap_or_default(),
-        _ => 0,
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Responses
-// ---------------------------------------------------------------------------
-
-fn json(status: u16, body: &str) -> Result<Response<ResponseBody>, Error> {
-    let builder = Response::builder()
-        .status(status)
-        .header("content-type", "application/json; charset=utf-8")
-        .header("cache-control", "no-store");
-    Ok(response_from(builder, body.to_owned()))
-}
-
-fn not_found_html() -> Result<Response<ResponseBody>, Error> {
-    let body = "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Not found</title></head>\
-<body><h1>404</h1><p>That file is not part of this deployment.</p>\
-<p><a href=\"/\">Open Blockbench</a></p></body></html>"
-        .to_owned();
-    let builder = Response::builder()
-        .status(404)
-        .header("content-type", "text/html; charset=utf-8");
-    Ok(response_from(builder, body))
-}
-
-fn response_from(
-    builder: http::response::Builder,
-    body: String,
-) -> Response<ResponseBody> {
-    builder
-        .body(ResponseBody::from(body))
-        .expect("response body is always valid")
-}
-
-fn error_json(message: &str) -> String {
-    serde_json::json!({ "error": message }).to_string()
-}
-
 fn has_file_extension(path: &str) -> bool {
     path.rsplit('/')
         .next()
@@ -305,18 +97,67 @@ fn has_file_extension(path: &str) -> bool {
 }
 
 // ---------------------------------------------------------------------------
+// Responses
+// ---------------------------------------------------------------------------
+
+fn json(status: u16, body: &str) -> Response<ResponseBody> {
+    Response::builder()
+        .status(status)
+        .header("content-type", "application/json; charset=utf-8")
+        .header("cache-control", "no-store")
+        .body(ResponseBody::from(body.to_owned()))
+        .expect("a JSON response is always valid")
+}
+
+fn html(status: u16, body: &str) -> Response<ResponseBody> {
+    Response::builder()
+        .status(status)
+        .header("content-type", "text/html; charset=utf-8")
+        .header("cache-control", "no-store")
+        .body(ResponseBody::from(body.to_owned()))
+        .expect("an HTML response is always valid")
+}
+
+fn not_found_html() -> Response<ResponseBody> {
+    html(
+        404,
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Not found</title></head>\
+<body><h1>404</h1><p>That file is not part of this deployment.</p>\
+<p><a href=\"/\">Open Blockbench</a></p></body></html>",
+    )
+}
+
+fn static_missing_html() -> Response<ResponseBody> {
+    html(
+        503,
+        "<!DOCTYPE html><html><head><meta charset=\"utf-8\"><title>Blockbench</title></head>\
+<body><h1>Static assets are missing</h1>\
+<p>The editor files were not found in <code>public/</code>. Re-run the build.</p>\
+</body></html>",
+    )
+}
+
+fn error_json(message: &str) -> String {
+    // The message is a fixed string at every call site, and quotes are escaped
+    // so a future dynamic message cannot break the document.
+    format!("{{\"error\":\"{}\"}}", message.replace('"', "\\\""))
+}
+
+// ---------------------------------------------------------------------------
 // Build information
 // ---------------------------------------------------------------------------
 
-/// Reads the version out of `build-info.json` without `serde_json` at startup:
-/// the value is a plain string field, so a scan is enough and keeps the boot
-/// path free of parsing work.
+/// The version and commit recorded in `build-info.json`.
 fn version() -> (String, String) {
     let version = field(BUILD_INFO, "version").unwrap_or_else(|| "unknown".to_owned());
     let commit = field(BUILD_INFO, "commit").unwrap_or_else(|| "unknown".to_owned());
     (version, commit)
 }
 
+/// Reads one string field out of the embedded JSON. A full parser is not worth
+/// a dependency here: the file is generated by this repository and its shape is
+/// fixed, and an unrecognised shape degrades to "unknown" rather than failing
+/// the request.
 fn field(source: &str, key: &str) -> Option<String> {
     let needle = format!("\"{key}\"");
     let start = source.find(&needle)? + needle.len();
@@ -329,20 +170,18 @@ fn field(source: &str, key: &str) -> Option<String> {
 }
 
 fn health_json() -> String {
-    serde_json::json!({ "ok": true }).to_string()
+    "{\"ok\":true}".to_owned()
 }
 
 fn version_json() -> String {
     let (version, commit) = version();
-    serde_json::json!({
-        "version": version,
-        "commit": commit,
-        "runtime": "rust",
-        "region": env::var("VERCEL_REGION").unwrap_or_else(|_| "unknown".to_owned()),
-        "served_at": SystemTime::now()
-            .duration_since(UNIX_EPOCH)
-            .map(|duration| duration.as_secs())
-            .unwrap_or_default(),
-    })
-    .to_string()
+    let region = env::var("VERCEL_REGION").unwrap_or_else(|_| "unknown".to_owned());
+    let served_at = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or_default();
+    format!(
+        "{{\"version\":\"{version}\",\"commit\":\"{commit}\",\"runtime\":\"rust\",\
+\"region\":\"{region}\",\"served_at\":{served_at}}}"
+    )
 }

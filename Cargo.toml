@@ -2,28 +2,19 @@
 name = "blockbench-web7"
 version = "0.1.0"
 edition = "2021"
-# Vercel's Rust runtime builds this crate in its own image, so pin the range
-# here instead of relying on whatever `rustup default` happens to be.
+# Vercel's Rust runtime builds this crate in its own image, so state the
+# toolchain floor here instead of relying on an image default.
 rust-version = "1.85"
 description = "Serves the Blockbench web build and its API from Vercel Functions"
 license = "MIT"
 publish = false
 
-# Vercel's Rust runtime looks for `src/main.rs` and depends on the crate
-# `vercel_runtime`. Both are what make the framework preset treat this as a
-# Rust app and hand every non-static request to the binary below.
+# Only what the handler actually uses. Keeping the dependency list short keeps
+# the compiled function small and the set of things that must resolve together
+# predictable: vercel_runtime already brings hyper, http, http-body and tokio.
 [dependencies]
 vercel_runtime = "2"
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-# The handler returns hyper responses and reads request bodies through the
-# http-body-util helpers, so both must be direct dependencies instead of
-# relying on whatever the runtime happens to re-export.
-http = "1"
-hyper = { version = "1", features = ["client", "http1"] }
-hyper-util = { version = "0.1", features = ["client-legacy", "http1", "tokio"] }
-http-body = "1"
-http-body-util = "0.1"
-serde_json = "1"
 
 # Release settings from the Vercel Rust docs: one codegen unit and fat LTO trade
 # build time for a smaller, faster binary.

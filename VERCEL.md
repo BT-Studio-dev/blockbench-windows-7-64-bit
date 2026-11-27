@@ -25,8 +25,7 @@ bodies, not to a function's package size (250 MB).
 | `/dist/bundle.js`, `/css/*`, `/font/*`, `/lang/*` | static files |
 | `/api/blockbench/health` | Rust |
 | `/api/blockbench/version` | Rust |
-| `/api/blockbench/chat` | Rust, proxying Anthropic |
-| anything else | Rust, which redirects to `/app/` |
+| anything else | Rust, which redirects to the editor |
 
 ## Build
 
@@ -47,6 +46,29 @@ node scripts/vercel_build.mjs
 npx vercel dev
 ```
 
+## Verifying the Rust
+
+The function is the one part that cannot be checked by opening a browser, so
+verify it from the command line once a deployment exists:
+
+```bash
+curl -s https://<deployment>/api/blockbench/health
+# {"ok":true}
+
+curl -s https://<deployment>/api/blockbench/version
+# {"version":"5.2.2","commit":"...","runtime":"rust","region":"iad1",...}
+
+curl -sI https://<deployment>/no/such/page
+# 307, location: /?route=/no/such/page
+
+curl -s https://<deployment>/api/blockbench/nope
+# 404, {"error":"Unknown API route"}
+```
+
+A compile error surfaces as a failed deployment whose build log names the
+failing line; the Rust runtime compiles `src/main.rs` during the build, so a
+deployment that reports READY has produced a working binary.
+
 ## Deploying
 
 The project is connected to the repository, so a push deploys. To deploy a
@@ -55,16 +77,6 @@ preview without a push, use the Vercel connector or `vercel deploy`.
 Without a custom domain the site is served at the project's `.vercel.app`
 address. Custom domains are configured in the Vercel dashboard or through the
 connector; nothing in this repository depends on the hostname.
-
-## The chat endpoint
-
-`/api/blockbench/chat` forwards a conversation to Anthropic and returns the
-reply unchanged, so the browser never holds the API key. It is disabled until
-`ANTHROPIC_API_KEY` is set on the project; without it the endpoint answers 503
-and the page leaves the chat control out.
-
-Optional: `ANTHROPIC_MODEL` overrides the model, which defaults to
-`claude-sonnet-4-20250514`.
 
 ## Windows 7
 
@@ -78,7 +90,7 @@ build that failed.
 | Path | Purpose |
 | --- | --- |
 | `Cargo.toml` | Rust crate and the release profile from Vercel's docs |
-| `src/main.rs` | Route table handling, JSON API, chat proxy |
+| `src/main.rs` | Route handling, JSON API, redirects for client-side routes |
 | `publisher/index.html` | Download page, the site root |
 | `publisher/site.js` | Generated data the download page renders |
 | `scripts/site.mjs` | Writes `build-info.json` and `publisher/site.js` |
