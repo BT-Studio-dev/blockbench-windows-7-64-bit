@@ -1,0 +1,112 @@
+#!/usr/bin/env node
+// Guard against shipping a pack that claims to fix the glasses z-fight and does not.
+//
+// This check exists because that already happened. The fix was verified against
+// a copy and then the packs were rebuilt from pack-source, which had never been
+// patched, so all 18 releases were labelled "glasses fix" while still carrying
+// the old brow planes. A grep for "0.05" made it look fixed because the value
+// appeared elsewhere in a 174 KB file.
+//
+// So this reads the built zips and asserts the exact numbers, per box.
+import fs from 'node:fs';
+import path from 'node:path';
+import zlib from 'node:zlib';
+
+const root = path.resolve(import.meta.dirname, '..');
+const builds = path.join(root, 'fresh-moves-glasses', 'builds');
+
+// Right brows sit at z=0.05 inside a node translated -4.4; left at -0.35 inside
+// -4. Left and right are deliberately different -- they are not a typo.
+const EXPECT = {
+	right_brow5: 0.05, right_brow6: 0.05, right_brow7: 0.05, right_brow8: 0.05,
+	left_brow5: -0.35, left_brow6: -0.35, left_brow7: -0.35, left_brow8: -0.35,
+};
+// brow9 must NOT move: it is a different row and already correct.
+const UNTOUCHED = { right_brow9: -0.15, left_brow9: -0.15 };
+
+// Minimal ZIP reader -- inflate the one file we care about without a dependency.
+function readZipEntry(buf, want) {
+	let eocd = -1;
+	for (let i = buf.length - 22; i >= 0; i--) {
+		if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
+	}
+	if (eocd < 0) throw new Error('not a zip');
+	const count = buf.readUInt16LE(eocd + 10);
+	let off = buf.readUInt32LE(eocd + 16);
+	for (let n = 0; n < count; n++) {
+		if (buf.readUInt32LE(off) !== 0x02014b50) throw new Error('bad central directory');
+		const method = buf.readUInt16LE(off + 10);
+		const compSize = buf.readUInt32LE(off + 20);
+		const nameLen = buf.readUInt16LE(off + 28);
+		const extraLen = buf.readUInt16LE(off + 30);
+		const commentLen = buf.readUInt16LE(off + 32);
+		const localOff = buf.readUInt32LE(off + 42);
+		const name = buf.toString('utf8', off + 46, off + 46 + nameLen);
+		if (name === want) {
+			const lNameLen = buf.readUInt16LE(localOff + 26);
+			const lExtraLen = buf.readUInt16LE(localOff + 28);
+			const start = localOff + 30 + lNameLen + lExtraLen;
+			const data = buf.subarray(start, start + compSize);
+			return method === 0 ? data : zlib.inflateRawSync(data);
+		}
+		off += 46 + nameLen + extraLen + commentLen;
+	}
+	return null;
+}
+
+function browBoxes(jem) {
+	const found = {};
+	(function walk(node) {
+		if (Array.isArray(node)) return node.forEach(walk);
+		if (!node || typeof node !== 'object') return;
+		if (typeof node.id === 'string' && EXPECT[node.id] !== undefined || UNTOUCHED[node.id] !== undefined) {
+			const boxes = node.boxes || [];
+			found[node.id] = boxes.map(b => (b.coordinates || [])[2]);
+		}
+		Object.values(node).forEach(walk);
+	})(jem);
+	return found;
+}
+
+const zips = fs.readdirSync(builds).filter(f => f.endsWith('.zip')).sort();
+if (!zips.length) {
+	console.error('[glasses-fix] no builds found');
+	process.exit(1);
+}
+
+let failed = 0;
+for (const file of zips) {
+	const version = file.replace(/^.*glasses-/, '').replace(/\.zip$/, '');
+	const buf = fs.readFileSync(path.join(builds, file));
+	const problems = [];
+
+	for (const jemPath of ['assets/minecraft/optifine/cem/player.jem', 'assets/minecraft/optifine/cem/player_slim.jem']) {
+		const raw = readZipEntry(buf, jemPath);
+		if (!raw) { problems.push(`${jemPath} missing`); continue; }
+		const boxes = browBoxes(JSON.parse(raw.toString('utf8')));
+		for (const [id, want] of Object.entries(EXPECT)) {
+			const got = boxes[id];
+			if (!got) { problems.push(`${id} not found`); continue; }
+			if (!got.length) { problems.push(`${id} has no boxes`); continue; }
+			for (const z of got) {
+				if (z !== want) problems.push(`${id} z=${z} (want ${want})`);
+			}
+		}
+		for (const [id, want] of Object.entries(UNTOUCHED)) {
+			for (const z of (boxes[id] || [])) {
+				if (z !== want) problems.push(`${id} MOVED z=${z} (want ${want})`);
+			}
+		}
+	}
+
+	if (problems.length) {
+		failed++;
+		console.error(`[glasses-fix] ${version}: ${problems.slice(0, 4).join('; ')}${problems.length > 4 ? ` (+${problems.length - 4})` : ''}`);
+	}
+}
+
+if (failed) {
+	console.error(`[glasses-fix] FAILED: ${failed} of ${zips.length} packs are not carrying the fix`);
+	process.exit(1);
+}
+console.log(`[glasses-fix] OK: all ${zips.length} packs carry the fix (right 5-8 at 0.05, left 5-8 at -0.35)`);

@@ -14,8 +14,8 @@
  * while still shipping every file the editor asks for at runtime.
  */
 import fs from 'node:fs';
-import path from 'node:path';
 import {execFileSync} from 'node:child_process';
+import path from 'node:path';
 import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {useBundle} from './index_html.mjs';
@@ -177,6 +177,16 @@ if (fs.existsSync(glowing_dir)) {
 		fs.copyFileSync(path.join(glowing_dir, file), path.join(glowing_out, file));
 	}
 	console.log(`[vercel] published Glowing Eyes page with ${glowing_files.length} files`);
+}
+
+// Refuse to publish packs that do not carry the glasses fix. The source trees
+// were once left unpatched while the site said "glasses fix", which shipped 18
+// mislabelled releases; this makes that failure a build error instead of a
+// silent one. See scripts/verify_glasses_fix.mjs.
+try {
+	execFileSync(process.execPath, [path.join(root, 'scripts', 'verify_glasses_fix.mjs')], {stdio: 'inherit'});
+} catch {
+	throw new Error('[vercel] pack verification failed -- refusing to publish');
 }
 
 const pack_dir = path.join(root, 'fresh-moves-glasses', 'builds');
