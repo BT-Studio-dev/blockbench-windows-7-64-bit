@@ -25,7 +25,25 @@ the first time.
 
 ## Build the installer
 
+### Option A: let GitHub build it (no local setup)
+
+`.github/workflows/build-windows7.yml` builds the installer on a Windows
+runner and uploads it as an artifact.
+
+1. Push a commit whose message contains `ci-build` (the convention
+   `build-linux.yml` already uses), or run the workflow by hand:
+   *Actions → Build Windows 7 installer → Run workflow*.
+2. When the run finishes, download **blockbench-win7-x64-installer** from the
+   run's *Artifacts* section.
+
+Pushing a `v*` tag also publishes a GitHub release with the installer
+attached. The build is **unsigned**, so Windows SmartScreen will warn on the
+target machine until a certificate is configured.
+
+### Option B: build locally on Windows
+
 ```bash
+npm install
 npm run build-electron     # esbuild desktop bundle + IIFE check + index.html
 npx electron-builder --win nsis --x64 --publish=never
 ```
@@ -128,6 +146,11 @@ Checked in this repository:
   this environment cannot produce a real installer executable.
 - **electron-builder config**: validates against the `app-builder-lib` 23.6.0
   schema.
+
+- **GitHub Actions**, `windows-latest`: the installer compiles with the real
+  electron-builder NSIS plugin set (StdUtils, WinShell, UAC, nsProcess) and is
+  produced as a ~76 MB artifact. This proves `build/installer.nsh` builds, not
+  that it behaves.
 
 Not verified here, needs a real Windows 7 SP1 x64 machine:
 
