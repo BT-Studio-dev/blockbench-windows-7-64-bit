@@ -222,12 +222,20 @@ export class CustomTheme {
 				this.content_vue.data = CustomTheme.data;
 				if (!remote_themes_loaded) {
 					remote_themes_loaded = true;
-					$.getJSON('https://api.github.com/repos/JannisX11/blockbench-themes/contents/themes').then(files => {
-						files.forEach(async (file) => {
+					$.getJSON('https://api.github.com/repos/JannisX11/blockbench-themes/contents/themes').then(async (files) => {
+						// Fetch one theme at a time instead of starting every request at
+						// once. `forEach` with an async callback does not wait, so the old
+						// code fired a request per file simultaneously; a failing or
+						// rate-limited endpoint then produced a burst of rejections while
+						// the dialog was building its grid, which was enough to take the
+						// renderer down. Serialising keeps at most one request in flight
+						// and lets the grid update between them.
+						if (!(files instanceof Array)) return;
+						for (let file of files) {
 							try {
 								let {content} = await $.getJSON(file.git_url);
 								let theme = new CustomTheme().parseBBTheme(patchedAtob(content));
-								if (theme.desktop_only && Blockbench.isMobile) return false;
+								if (theme.desktop_only && Blockbench.isMobile) continue;
 								theme.id = file.name.replace(/\.\w+/, '');
 								theme.source = 'repository';
 								if (!CustomTheme.themes.find(t2 => t2.id == theme.id)) {
@@ -236,7 +244,7 @@ export class CustomTheme {
 							} catch (err) {
 								console.error(err);
 							}
-						})
+						}
 					}).catch(console.error)
 				}
 			},

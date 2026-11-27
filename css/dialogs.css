@@ -965,14 +965,62 @@
 		background-color: var(--color-elevated);
 		box-shadow: 0px 2px 4px rgba(0, 0, 0, 0.2);
 		cursor: pointer;
-		border-radius: 5px;
+		border-radius: 10px;
+		position: relative;
+		/* The card is a control, so it needs a visible keyboard focus ring and a
+		   state that does not rely on colour alone. */
+		transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease, border-color 120ms ease;
+		will-change: transform;
 	}
 	#theme_list .theme:hover {
 		color: var(--color-light);
 		background-color: var(--color-button);
+		/* Lift instead of only recolouring, so the grid reads as interactive. */
+		transform: translateY(-2px);
+		box-shadow: 0px 6px 16px rgba(0, 0, 0, 0.28);
+	}
+	#theme_list .theme:focus-visible {
+		outline: 2px solid var(--color-accent);
+		outline-offset: 3px;
+	}
+	#theme_list .theme:active {
+		transform: translateY(0);
+		box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.24);
 	}
 	#theme_list .theme.selected {
 		border-color: var(--color-accent);
+		/* A tinted ring plus a check mark, so the selected theme is obvious even
+		   for the near-black OLED theme where a 2px accent border is all that
+		   separates it from the background. The ring is the theme's own accent
+		   at reduced opacity rather than a fixed blue, so it does not clash on
+		   the purple or red themes. color-mix() would be simpler but needs
+		   Chromium 111, and Electron 22 tops out at 108. */
+		box-shadow: 0px 4px 12px rgba(0, 0, 0, 0.26);
+		background-color: var(--color-elevated);
+	}
+	#theme_list .theme.selected::before {
+		content: "";
+		position: absolute;
+		inset: -5px;
+		border-radius: 14px;
+		border: 3px solid var(--color-accent);
+		opacity: 0.35;
+		pointer-events: none;
+	}
+	#theme_list .theme.selected::after {
+		content: "check";
+		font-family: 'Material Icons';
+		position: absolute;
+		top: 2px;
+		right: 2px;
+		width: 18px;
+		height: 18px;
+		line-height: 18px;
+		font-size: 13px;
+		text-align: center;
+		border-radius: 50%;
+		color: var(--color-accent_text);
+		background-color: var(--color-accent);
 	}
 	#theme_list .theme > .theme_preview {
 		margin-bottom: 4px;
