@@ -23,6 +23,17 @@ const here = fileURLToPath(import.meta.url);
 const root = path.resolve(path.dirname(here), '..');
 const public_dir = path.join(root, 'public');
 
+// If this runs on a branch that does not have the website files, Vercel reports
+// a missing output directory rather than the real cause. Say it plainly.
+for (const required of ['index.html', 'package.json', 'build.mjs', 'publisher/index.html']) {
+	if (!fs.existsSync(path.join(root, required))) {
+		throw new Error(
+			`[vercel] ${required} is missing from this checkout. The website files live on the ` +
+				`arena/d5dca684-blockbench-windows-7-64-bit branch; check the branch selected in Vercel.`
+		);
+	}
+}
+
 /** Directories the editor fetches from at runtime. */
 const ASSET_DIRECTORIES = ['assets', 'css', 'font', 'icons', 'themes', 'keymaps', 'lang', 'content', 'lib'];
 
