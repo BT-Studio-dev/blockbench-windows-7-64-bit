@@ -4,7 +4,7 @@
 # The port syncs from glowingeyes-26.3-port/, but a workflow inside that folder
 # would sit at .github/workflows *within a subdirectory*, which GitHub never
 # reads. Only the repository root counts. So this file stays here and points
-# Gradle at the subdirectory with --project-dir.
+# Gradle at the subdirectory with working-directory.
 #
 # WHAT THIS IS FOR
 # The sandbox that produced the port has no route to maven.neoforged.net, so
@@ -13,6 +13,11 @@
 # EXPECT IT TO FAIL. That is the point: common/build.gradle still asks for
 # neoFormVersion, and 26.x publishes no NeoForm. The failure message decides
 # which of the two fix paths in PORT-26.3.md is right.
+#
+# THE ERROR DIGEST IS EMITTED AS ANNOTATIONS ON PURPOSE. Artifact downloads and
+# raw logs are served from blob.core.windows.net, which some environments are
+# not allowed to reach. Annotations come from the Checks API instead, so the
+# reason for a failure stays readable from anywhere.
 name: Glowing Eyes 26.3
 
 on:
@@ -37,9 +42,9 @@ jobs:
       - uses: actions/checkout@v4
 
       # Minecraft 26.x needs Java 25, and Gradle itself has to run on it --
-      # a Java 21 daemon cannot even start a VERSION_25 toolchain.
+      # a Java 21 daemon cannot start a VERSION_25 toolchain.
       - name: Set up JDK 25
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
@@ -50,23 +55,30 @@ jobs:
       - name: Java version
         run: java -version 2>&1
 
-      # --continue so one loader failing does not hide whether the other built.
+      # set -o pipefail is load-bearing. Without it the exit status of
+      # `./gradlew ... | tee` is tee's, which is always 0, and a failed build
+      # reports success -- which is exactly what happened on the first run.
       - name: Build
         id: build
-        continue-on-error: true
         working-directory: glowingeyes-26.3-port
         run: |
+          set -o pipefail
           chmod +x ./gradlew
-          ./gradlew build --stacktrace --continue --no-daemon \
-            2>&1 | tee /tmp/gradle-build.log
+          ./gradlew build --stacktrace --continue --no-daemon 2>&1 | tee /tmp/gradle-build.log
 
-      - name: Report the failure
-        if: steps.build.outcome == 'failure'
+      - name: Emit the error digest
+        if: failure()
         run: |
-          echo "::group::first hard error"
-          grep -nE "FAILURE|What went wrong|Could not (resolve|find)|error:|Caused by|> Could not|Exception" \
-            /tmp/gradle-build.log | head -40 || true
-          echo "::endgroup::"
+          echo "=== why it failed ==="
+          test -f /tmp/gradle-build.log || { echo "::error::no build log was produced"; exit 0; }
+          # First failure and what went wrong, as annotations so they survive
+          # without artifact access.
+          grep -nE "What went wrong|Could not (resolve|find|create|open)|Could not determine|FAILURE:|Caused by:|^> |error:|requires|not found" /tmp/gradle-build.log \
+            | head -30 \
+            | sed 's/\\/\\\\/g; s/%/%25/g; s/\r//g' \
+            | while IFS= read -r line; do echo "::error title=Gradle::${line}"; done || true
+          echo "=== last 40 lines ==="
+          tail -40 /tmp/gradle-build.log || true
 
       - name: Upload the build log
         if: always()
@@ -86,7 +98,6 @@ jobs:
             glowingeyes-26.3-port/neoforge/build/libs/*.jar
           if-no-files-found: warn
 
-      # The compiled classes are the useful thing even when packaging fails.
       - name: Upload compile reports
         if: always()
         uses: actions/upload-artifact@v4
@@ -96,7 +107,3 @@ jobs:
             glowingeyes-26.3-port/**/build/reports/**
             glowingeyes-26.3-port/**/build/tmp/compileJava/**
           if-no-files-found: ignore
-
-      - name: Fail the job if the build failed
-        if: steps.build.outcome == 'failure'
-        run: exit 1
