@@ -19,9 +19,12 @@ dependencies {
     include api("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
     include implementation("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
 
-    compileOnly "maven.modrinth:flashback:DDcDAzpe"
-    compileOnly "maven.modrinth:female-gender:wxfN7iwN"
-    compileOnly "maven.modrinth:replaymod:lrnVIO9F"
+    // The three compatibility integrations (Flashback, Female Gender, ReplayMod)
+    // are switched off for this port; see disabled-for-26.3/. Flashback could not
+    // be processed at all -- its access widener is written in intermediary names,
+    // which do not exist once the game ships unobfuscated -- and all three are
+    // optional integrations with third-party renderers that would need their own
+    // 26.3 builds. They are not on the path to the mod working.
 
     implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
     implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
