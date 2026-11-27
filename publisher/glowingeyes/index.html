@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Glowing Eyes — make your eyes glow in Minecraft</title>
+	<meta name="description" content="A Fabric and NeoForge mod that makes selected pixels of a Minecraft skin glow, with an in-game pixel editor, colour picker and presets.">
+	<link rel="icon" href="/glowingeyes/logo.png">
+	<meta property="og:title" content="Glowing Eyes">
+	<meta property="og:description" content="Make your eyes glow in Minecraft. Fabric and NeoForge, in-game editor, 15 presets.">
+	<meta property="og:image" content="/glowingeyes/logo.png">
+	<meta name="theme-color" content="#0d0f13">
+	<style>
+		:root {
+			color-scheme: dark;
+			--bg: #0d0f13;
+			--panel: #16191f;
+			--panel-2: #1e222a;
+			--line: #2a2f3a;
+			--text: #e2e5ea;
+			--subtle: #8b93a3;
+			--glow: #ff3b3b;
+			--glow-soft: #ff6b6b;
+			--accent: #7cc4ff;
+		}
+		* { box-sizing: border-box; }
+		html { scroll-behavior: smooth; }
+		body {
+			margin: 0;
+			background: var(--bg);
+			color: var(--text);
+			font: 16px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif;
+			-webkit-font-smoothing: antialiased;
+		}
+		main { max-width: 940px; margin: 0 auto; padding: 0 24px 96px; }
+		a { color: var(--accent); }
+
+		/* ---- hero ---- */
+		header.hero {
+			position: relative;
+			padding: 88px 24px 64px;
+			text-align: center;
+			overflow: hidden;
+			border-bottom: 1px solid var(--line);
+		}
+		header.hero::before {
+			content: "";
+			position: absolute;
+			inset: -40% 50% auto auto;
+			width: 900px; height: 900px;
+			transform: translateX(50%);
+			background: radial-gradient(circle, rgba(255,59,59,0.16) 0%, rgba(255,59,59,0.05) 35%, transparent 65%);
+			pointer-events: none;
+		}
+		.hero img.logo {
+			width: 132px; height: 132px;
+			border-radius: 24px;
+			image-rendering: pixelated;
+			position: relative;
+			box-shadow: 0 0 0 1px var(--line), 0 18px 60px -18px rgba(255,59,59,0.65);
+		}
+		.hero h1 {
+			font-size: clamp(2.1rem, 6vw, 3.2rem);
+			line-height: 1.1;
+			margin: 26px 0 10px;
+			letter-spacing: -0.025em;
+			position: relative;
+		}
+		.hero h1 span {
+			color: var(--glow);
+			text-shadow: 0 0 26px rgba(255,59,59,0.55);
+		}
+		.hero p.lede {
+			color: var(--subtle);
+			font-size: 1.1rem;
+			max-width: 58ch;
+			margin: 0 auto 32px;
+			position: relative;
+		}
+		.hero .badges {
+			display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+			margin-bottom: 30px; position: relative;
+		}
+		.badge {
+			font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase;
+			background: var(--panel-2); border: 1px solid var(--line);
+			border-radius: 99px; padding: 4px 12px; color: var(--subtle);
+		}
+		.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; }
+		.btn {
+			display: inline-flex; align-items: center; gap: 8px;
+			padding: 13px 26px; border-radius: 11px;
+			text-decoration: none; font-weight: 600; font-size: 0.97rem;
+			border: 1px solid transparent;
+			transition: transform .14s, background .14s, border-color .14s;
+		}
+		.btn:hover, .btn:focus-visible { transform: translateY(-1px); }
+		.btn.primary { background: var(--glow); color: #16060a; }
+		.btn.primary:hover { background: #ff5c5c; }
+		.btn.ghost { border-color: var(--line); color: var(--text); background: var(--panel); }
+		.btn.ghost:hover { border-color: var(--glow); }
+
+		h2 {
+			font-size: 0.86rem; text-transform: uppercase; letter-spacing: 0.11em;
+			color: var(--subtle); margin: 64px 0 18px;
+		}
+		h3 { font-size: 1.02rem; margin: 0 0 6px; }
+
+		.cards { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+		.card {
+			background: var(--panel); border: 1px solid var(--line);
+			border-radius: 14px; padding: 20px 22px;
+		}
+		.card p { margin: 0; color: var(--subtle); font-size: 0.94rem; }
+		.card .num {
+			display: inline-block; font-variant-numeric: tabular-nums;
+			color: var(--glow); font-weight: 700; font-size: 1.5rem; line-height: 1.2;
+		}
+
+		.shot { margin: 18px 0; }
+		.shot img {
+			width: 100%; border-radius: 14px; border: 1px solid var(--line);
+			display: block; box-shadow: 0 20px 50px -30px rgba(0,0,0,0.9);
+		}
+		.shot figcaption { color: var(--subtle); font-size: 0.86rem; margin-top: 9px; text-align: center; }
+		.shots-2 { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+
+		table { width: 100%; border-collapse: collapse; font-size: 0.94rem; }
+		th, td { text-align: left; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--line); }
+		th { color: var(--subtle); font-size: 0.76rem; text-transform: uppercase; letter-spacing: .07em; }
+		td.ver { font-variant-numeric: tabular-nums; font-weight: 600; }
+		.pill-ok { color: #7fd48a; }
+		.pill-warn { color: #ffcc66; }
+
+		.steps { counter-reset: step; list-style: none; padding: 0; }
+		.steps li { counter-increment: step; position: relative; padding-left: 46px; margin: 0 0 20px; }
+		.steps li::before {
+			content: counter(step);
+			position: absolute; left: 0; top: -2px;
+			width: 30px; height: 30px; border-radius: 50%;
+			background: var(--panel); border: 1px solid var(--line);
+			display: grid; place-items: center;
+			font-size: .85rem; color: var(--subtle); font-variant-numeric: tabular-nums;
+		}
+		code {
+			background: #0a0c10; border: 1px solid var(--line);
+			border-radius: 5px; padding: 2px 7px;
+			font-size: 0.88em; font-family: ui-monospace, "SF Mono", Menlo, monospace;
+		}
+		pre {
+			background: #0a0c10; border: 1px solid var(--line); border-radius: 10px;
+			padding: 16px 18px; overflow-x: auto; font-size: 0.86rem; line-height: 1.6;
+		}
+		pre code { background: none; border: 0; padding: 0; }
+
+		.callout {
+			border-left: 3px solid var(--glow);
+			background: #1a1114;
+			padding: 16px 22px; border-radius: 0 12px 12px 0; margin: 22px 0;
+		}
+		.callout p { margin: .4em 0; }
+		.callout.ok { border-left-color: #7fd48a; background: #101a13; }
+		ul li { margin: .4em 0; }
+		.note { color: var(--subtle); font-size: 0.88rem; }
+		footer {
+			margin-top: 72px; padding-top: 22px;
+			border-top: 1px solid var(--line);
+			color: var(--subtle); font-size: 0.86rem;
+		}
+	</style>
+</head>
+<body>
+
+<header class="hero">
+	<img class="logo" src="/glowingeyes/logo.png" alt="The Glowing Eyes logo: a Minecraft head with glowing red eyes" width="132" height="132">
+	<h1>Make your <span>eyes glow</span></h1>
+	<p class="lede">
+		Paint the pixels you want lit, pick a colour, and they glow in game.
+		An in-game editor, fifteen presets, and support for both Fabric and NeoForge.
+	</p>
+	<div class="badges">
+		<span class="badge">Fabric</span>
+		<span class="badge">NeoForge</span>
+		<span class="badge">Client side</span>
+		<span class="badge">Version 2.1.3</span>
+	</div>
+	<div class="cta">
+		<a class="btn primary" href="https://modrinth.com/mod/glowing-eyes" target="_blank" rel="noopener noreferrer">Download from Modrinth</a>
+		<a class="btn ghost" href="https://www.curseforge.com/minecraft/mc-mods/glowing-eyes" target="_blank" rel="noopener noreferrer">CurseForge</a>
+		<a class="btn ghost" href="#install">How to install</a>
+	</div>
+</header>
+
+<main>
+
+	<h2>What it does</h2>
+	<div class="cards">
+		<div class="card">
+			<h3>Pick any pixels</h3>
+			<p>Choose which parts of a skin glow, down to the individual pixel, with the in-game editor.</p>
+		</div>
+		<div class="card">
+			<h3>Any colour</h3>
+			<p>A hue and brightness picker, not just red. Match whatever character you are playing.</p>
+		</div>
+		<div class="card">
+			<h3>Presets</h3>
+			<p><span class="num">15</span> are included, and you can save your own to reuse or swap between.</p>
+		</div>
+	</div>
+
+	<h2>In game</h2>
+	<figure class="shot">
+		<img src="/glowingeyes/glowingeyes_preview.webp" alt="A player in Minecraft with glowing eyes" loading="lazy" width="1920" height="1017">
+		<figcaption>The effect in game. The glow is drawn as its own pass, so it reads as light rather than painted pixels.</figcaption>
+	</figure>
+
+	<div class="shots-2">
+		<figure class="shot">
+			<img src="/glowingeyes/glowingeyes_editor.webp" alt="The in-game pixel editor: a 10 by 8 grid of the face with drawing tools on both sides" loading="lazy" width="1920" height="1009">
+			<figcaption>The editor, opened in game.</figcaption>
+		</figure>
+		<figure class="shot">
+			<img src="/glowingeyes/glowingeyes_presets.webp" alt="The preset picker with a list of saved eye designs" loading="lazy" width="1920" height="1009">
+			<figcaption>Saved presets.</figcaption>
+		</figure>
+	</div>
+
+	<figure class="shot">
+		<img src="/glowingeyes/glowingeyes_preview_freshmoves.webp" alt="Glowing eyes working together with the Fresh Moves player animation pack" loading="lazy" width="1920" height="1017">
+		<figcaption>Working alongside Fresh Moves. The author confirmed the mod runs fine with both Fresh Moves and Just Expressions in
+			<a href="https://github.com/RaydanOMGr/glowingeyes/issues/11" target="_blank" rel="noopener noreferrer">issue #11</a>.</figcaption>
+	</figure>
+
+	<h2 id="install">Install</h2>
+	<ol class="steps">
+		<li>
+			<strong>Pick the build for your game version.</strong>
+			The mod is published per Minecraft version, so take the matching download from Modrinth or CurseForge rather than the newest one.
+		</li>
+		<li>
+			<strong>Choose your loader.</strong>
+			Both <a href="https://fabricmc.net/" target="_blank" rel="noopener noreferrer">Fabric</a> and
+			<a href="https://neoforged.net/" target="_blank" rel="noopener noreferrer">NeoForge</a> are supported. Use the jar that matches the loader you already run.
+		</li>
+		<li>
+			<strong>Drop the jar in <code>mods</code>.</strong>
+			Start the game with the matching loader profile.
+		</li>
+		<li>
+			<strong>Open the editor in game.</strong>
+			Use the keybind, or run <code>/eyes open</code>. Paint the pixels you want to glow, set the colour, and save.
+		</li>
+	</ol>
+	<p class="note">It is a client-side mod, so it works in single player and on servers without the server having it. Other players only see the glow if they also have it installed.</p>
+
+	<h2>Versions</h2>
+	<table>
+		<thead><tr><th>Minecraft</th><th>Status</th><th>Notes</th></tr></thead>
+		<tbody>
+			<tr><td class="ver">1.21.11</td><td class="pill-ok">Supported</td><td>Newest published branch</td></tr>
+			<tr><td class="ver">1.21.9 – 1.21.10</td><td class="pill-ok">Supported</td><td></td></tr>
+			<tr><td class="ver">1.21.6</td><td class="pill-ok">Supported</td><td></td></tr>
+			<tr><td class="ver">1.21.5</td><td class="pill-ok">Supported</td><td></td></tr>
+			<tr><td class="ver">1.21.4</td><td class="pill-ok">Supported</td><td></td></tr>
+			<tr><td class="ver">1.21.1</td><td class="pill-ok">Supported</td><td></td></tr>
+			<tr><td class="ver">1.20.1 – 1.20.4</td><td class="pill-ok">Supported</td><td></td></tr>
+			<tr><td class="ver">1.19.2 – 1.19.4</td><td class="pill-ok">Supported</td><td></td></tr>
+			<tr><td class="ver">1.12.2</td><td class="pill-warn">Old</td><td>Legacy branch, not maintained</td></tr>
+			<tr><td class="ver">26.x</td><td class="pill-warn">Not yet</td><td>No 26.x branch exists upstream</td></tr>
+		</tbody>
+	</table>
+
+	<div class="callout">
+		<p><strong>Minecraft 26.3 is not supported yet.</strong> The newest branch is 1.21.11, and 26.x requires Java 25 plus a different build setup, so a jar built for 1.21.11 will not load there. A port is in progress; until it lands, use a 1.21.x instance if you want this mod.</p>
+	</div>
+
+	<h2>Requirements</h2>
+	<ul>
+		<li><strong>Java 21</strong> or newer for the 1.21.x builds.</li>
+		<li><strong>Fabric</strong> or <strong>NeoForge</strong>, matching your Minecraft version.</li>
+		<li>No other mods required. It does not need Entity Model Features or Entity Texture Features.</li>
+	</ul>
+
+	<h2>Commands</h2>
+	<table>
+		<thead><tr><th>Command</th><th>Does</th></tr></thead>
+		<tbody>
+			<tr><td><code>/eyes open</code></td><td>Opens the pixel editor</td></tr>
+			<tr><td><code>/eyes dump</code></td><td>Writes the current eye map to a file, for sharing or backup</td></tr>
+			<tr><td><code>/eyes debuginfo</code></td><td>Prints loader, CPU and GPU details, useful in a bug report</td></tr>
+		</tbody>
+	</table>
+
+	<h2>Build it yourself</h2>
+	<pre><code>git clone https://github.com/RaydanOMGr/GlowingEyes.git
+cd GlowingEyes
+./gradlew build</code></pre>
+	<p class="note">Jars land in <code>fabric/build/libs</code> and <code>neoforge/build/libs</code>. To test without packaging, run <code>./gradlew :fabric:runClient</code> or <code>./gradlew :neoforge:runClient</code>.</p>
+
+	<footer>
+		<div>
+			Glowing Eyes by <a href="https://github.com/RaydanOMGr" target="_blank" rel="noopener noreferrer">AndreasMelone</a>,
+			licensed LGPL-3.0. Inspired by the Vampirism mod. Editor GUI help from
+			<a href="https://github.com/Olivoz" target="_blank" rel="noopener noreferrer">Olivo</a>.
+		</div>
+		<div class="note" style="margin-top:8px">
+			This page is an independent summary. Download links point at the author's own Modrinth and CurseForge pages;
+			the mod itself is not redistributed here.
+		</div>
+	</footer>
+
+</main>
+</body>
+</html>

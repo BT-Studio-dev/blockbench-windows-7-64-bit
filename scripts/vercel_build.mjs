@@ -158,6 +158,27 @@ for (const script of ['site.js', 'list.js']) {
 	);
 }
 
+// A summary page for the Glowing Eyes mod. It lives on its own path rather than
+// in public/ because public/ is rebuilt from an explicit list on every build,
+// and this page carries its own images. The script copies both, so a missing
+// asset fails the build instead of shipping a page with broken images.
+const glowing_dir = path.join(root, 'publisher', 'glowingeyes');
+if (fs.existsSync(glowing_dir)) {
+	const glowing_files = fs.readdirSync(glowing_dir);
+	const required = ['index.html', 'logo.png'];
+	for (const needed of required) {
+		if (!glowing_files.includes(needed)) {
+			throw new Error(`[vercel] publisher/glowingeyes/${needed} is missing`);
+		}
+	}
+	const glowing_out = path.join(public_dir, 'glowingeyes');
+	fs.mkdirSync(glowing_out, {recursive: true});
+	for (const file of glowing_files) {
+		fs.copyFileSync(path.join(glowing_dir, file), path.join(glowing_out, file));
+	}
+	console.log(`[vercel] published Glowing Eyes page with ${glowing_files.length} files`);
+}
+
 const pack_dir = path.join(root, 'fresh-moves-glasses', 'builds');
 if (fs.existsSync(pack_dir)) {
 	const packs = fs.readdirSync(pack_dir).filter(name => name.endsWith('.zip'));
