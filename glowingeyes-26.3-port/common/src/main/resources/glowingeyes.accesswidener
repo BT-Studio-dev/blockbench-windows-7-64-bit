@@ -1,4 +1,9 @@
-accessWidener v2    named
+# v2 official: under no-remap the game jar is already in 'official' (real
+# Mojang) names, and Loom validates the header against that. It was 'named'.
+# Only the header changes -- every entry below was already written with real
+# names (Minecraft$GameLoadCookie, RenderPipelines.register, GpuTexture.usage),
+# never intermediary, so nothing else needs touching.
+accessWidener v2    official
 accessible  class   net/minecraft/client/Minecraft$GameLoadCookie
 
 accessible  method  net/minecraft/client/renderer/RenderPipelines   register    (Lcom/mojang/blaze3d/pipeline/RenderPipeline;)Lcom/mojang/blaze3d/pipeline/RenderPipeline;
