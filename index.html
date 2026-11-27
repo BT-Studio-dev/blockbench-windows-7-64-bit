@@ -38,20 +38,38 @@
 			} catch (err) {}
 		}
 		window.ErrorLog = [];
-		window.onerror = (message, file, line) => {
-			if (message.includes('ResizeObserver loop completed with undelivered notifications')) return;
-			window.ErrorLog.push({message, file, line})
+		// A failure during boot used to leave a completely blank page: the detail
+		// text was written into #loading_error_detail, but nothing ever made that
+		// box visible, so the page stayed black with no way to tell what broke.
+		// Reveal the box whenever a boot error is caught, and include the reason.
+		function reportBootFailure(reason) {
+			window.ErrorLog.push({message: reason});
 			if (typeof Blockbench != 'undefined' && Blockbench.setup_successful) return;
 
+			let box = document.getElementById('loading_error_message');
 			let error_element = document.querySelector('#loading_error_detail');
 			if (error_element && !error_element.innerText) {
-				error_element.innerText = `${message}\nIn .${file.split(location.origin).join('')}:${line}`
+				error_element.innerText = reason;
 			}
 			let version = document.querySelector('#loading_error_version');
 			if (version && window.Blockbench) {
 				version.innerText = Blockbench.version;
 			}
+			if (box) box.style.display = 'block';
 		}
+		window.reportBootFailure = reportBootFailure;
+		window.onerror = (message, file, line) => {
+			if (String(message).includes('ResizeObserver loop completed with undelivered notifications')) return;
+			let where = file ? `\nIn .${String(file).split(location.origin).join('')}:${line}` : '';
+			reportBootFailure(`${message}${where}`);
+		}
+		// A rejected promise during boot never reaches window.onerror, so the page
+		// would stay black for that case too.
+		window.addEventListener('unhandledrejection', (event) => {
+			let reason = event.reason;
+			let message = (reason && (reason.message || reason)) || 'Unhandled promise rejection';
+			reportBootFailure(String(message));
+		});
 		window.factoryResetAndReload = function() {
 			let lang_key = 'menu.help.developer.reset_storage.confirm';
 			let result = window.confirm((window.tl && tl(lang_key) != lang_key) ? tl(lang_key) : 'Are you sure you want to reset Blockbench to factory settings? This will delete all custom settings, keybindings and installed plugins.');
@@ -280,6 +298,13 @@ the document has been parsed, just like the module script in the web build. -->
 
 			function showLoadingError() {
 				document.getElementById('loading_error_message').style.display = 'block'
+				// Say something useful even when no error was thrown. A long silent
+				// stall and a crash look identical on a blank page, so state that the
+				// app did not finish starting and name the likely causes.
+				let detail = document.querySelector('#loading_error_detail');
+				if (detail && !detail.innerText) {
+					detail.innerText = 'The editor did not finish starting. This is usually a slow connection, an out of date browser, or a browser extension blocking the app. Reloading or trying a private window usually tells them apart.';
+				}
 				if (window.require) {
 					require('@electron/remote').getCurrentWindow().webContents.openDevTools();
 				} else if (window.openDevTools) {
