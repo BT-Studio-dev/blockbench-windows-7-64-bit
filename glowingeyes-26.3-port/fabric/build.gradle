@@ -5,7 +5,11 @@ plugins {
 
 dependencies {
     minecraft "com.mojang:minecraft:${minecraft_version}"
-    mappings loom.officialMojangMappings()
+    // No mappings line. From 26.x the Minecraft jar ships unobfuscated, so
+    // there is nothing to map: Loom's officialMojangMappings() tries to fetch
+    // Mojang's obfuscation map for the version, which does not exist for 26.3,
+    // and configuration dies with "Failed to find official mojang mappings for
+    // 26.3". Architectury's loom-no-remap exists for this exact reason.
 
     include modApi("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
     include modImplementation("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
