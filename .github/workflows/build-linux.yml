@@ -27,7 +27,28 @@ jobs:
       - name: Install rpm
         run: sudo apt-get update && sudo apt-get install -y rpm
 
+      # Capture the output: when the build fails, an ::error:: annotation makes
+      # the reason visible in the API and in the run summary, instead of an
+      # opaque "exit code 1".
       - name: Publish Linux build
-        run: npm run publish-linux
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run publish-linux 2>&1 | tee /tmp/linux-build.log
+          status=$?
+          if [ $status -ne 0 ]; then
+            echo "::error::npm run publish-linux failed with exit code $status"
+            tail -n 40 /tmp/linux-build.log | sed 's/^/  /'
+          fi
+          exit $status
         env:
-          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Linux artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blockbench-linux
+          path: dist-electron/*.{deb,rpm,AppImage}
+          if-no-files-found: warn
+          retention-days: 14
