@@ -1,0 +1,132 @@
+name: Build Windows 7 installer
+
+# Builds the NSIS installer for Windows 7 SP1 x64 on a Windows runner.
+#
+# Why this workflow exists: the Windows 7 build cannot be produced on Linux or
+# macOS reliably, and it is the only way to check end to end that
+# build/installer.nsh compiles with the real electron-builder NSIS plugin DLLs
+# (StdUtils, WinShell, UAC, nsprProcess) and that the installer is produced.
+#
+# Triggers:
+#   - a "ci-build" marker in the push commit message (repo convention, see
+#     build-linux.yml), or
+#   - pushing a v* tag, which also publishes a GitHub release with the
+#     installer attached, or
+#   - manually from the Actions tab.
+
+on:
+  push:
+    branches:
+      - "**"
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: win7-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-windows7:
+    # Tag pushes always build; branch pushes only with the "ci-build" marker.
+    if: >-
+      startsWith(github.ref, 'refs/tags/v') ||
+      contains(github.event.head_commit.message, 'ci-build') ||
+      github.event_name == 'workflow_dispatch'
+    runs-on: windows-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      # npm ci uses package-lock.json exactly; npm install would silently
+      # update Electron 22 to a newer minor and break the Windows 7 support.
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Show pinned Electron version
+        run: node -e "console.log('electron', require('./node_modules/electron/package.json').version)"
+
+      # Produces dist/bundle.electron.js, checks that it is a classic script
+      # (module scripts do not load from file:// on Windows 7) and points
+      # index.html at it.
+      - name: Build desktop bundle
+        run: npm run build-electron
+
+      # No code signing certificate is configured in this repository, so this
+      # produces an unsigned installer. Windows SmartScreen will warn about it
+      # on the target machine; that is expected until a certificate is set up.
+      - name: Build NSIS installer
+        run: npx electron-builder --win nsis --x64 --publish=never
+
+      - name: Verify the installer was produced
+        shell: pwsh
+        run: |
+          $installer = Get-ChildItem -Path dist-electron -Filter "Blockbench_win7_x64_*.exe" |
+            Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $installer) {
+            Write-Error "No installer found in dist-electron"
+            Get-ChildItem dist-electron -ErrorAction SilentlyContinue
+            exit 1
+          }
+          # An NSIS installer for this app is far above 40 MB; anything smaller
+          # means the build silently produced a stub.
+          $sizeMB = [math]::Round($installer.Length / 1MB, 1)
+          Write-Host "Installer: $($installer.Name) ($sizeMB MB)"
+          if ($installer.Length -lt 40MB) {
+            Write-Error "Installer is only $sizeMB MB - the build did not complete"
+            exit 1
+          }
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: blockbench-win7-x64-installer
+          path: |
+            dist-electron/Blockbench_win7_x64_*.exe
+            dist-electron/Blockbench_win7_x64_*.exe.blockmap
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Package build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blockbench-win7-x64-log
+          path: dist-electron/builder-debug.yml
+          if-no-files-found: ignore
+          retention-days: 7
+
+  release:
+    # Pushing a v* tag publishes the installer as a GitHub release.
+    needs: build-windows7
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download installer
+        uses: actions/download-artifact@v4
+        with:
+          name: blockbench-win7-x64-installer
+          path: release
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$TAG" release/*.exe \
+            --repo "${{ github.repository }}" \
+            --title "Blockbench $TAG (Windows 7 SP1 x64)" \
+            --notes "Unsigned NSIS installer for Windows 7 SP1 / 8.x 64-bit. Windows SmartScreen will warn until a code signing certificate is configured."
