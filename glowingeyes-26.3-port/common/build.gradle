@@ -4,7 +4,12 @@ plugins {
 }
 
 neoForge {
-    neoFormVersion = neo_form_version
+    // 26.x publishes no NeoForm. Since the vanilla jar is unobfuscated there is
+    // nothing to map *from*, so the project is pinned to the NeoForge version
+    // itself and common compiles against it. neo_form_version no longer exists
+    // in gradle.properties; asking for it fails configuration outright, which
+    // is what the first CI run reported.
+    version = neoforge_version
     // Automatically enable AccessTransformers if the file exists
     def at = file('src/main/resources/META-INF/accesstransformer.cfg')
     if (at.exists()) {
