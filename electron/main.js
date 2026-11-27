@@ -71,7 +71,69 @@ const is_windows_7 = (() => {
 	}
 })()
 
-if (LaunchSettings.get('hardware_acceleration') == false) {
+/*
+ * Hardware acceleration.
+ *
+ * Blockbench offers a "Restart without Hardware Acceleration" escape hatch when
+ * it cannot create a WebGL context, and that writes `hardware_acceleration:
+ * false` into launch_settings.json. That flag is permanent: every later launch
+ * starts with app.disableHardwareAcceleration(), Chromium falls back to
+ * SwiftShader software rendering, and the viewport runs at roughly 10 frames
+ * per second forever, with no indication that the app never tried the GPU
+ * again.
+ *
+ * Two things fix that:
+ *
+ * 1. An automatic fallback is recorded separately from a deliberate choice, so
+ *    it can be retried on a later launch. A driver update, a Windows update or
+ *    a re-plugged monitor can make the GPU usable again, and the user should
+ *    not have to find a JSON file to benefit from that.
+ * 2. Retries are capped. A machine that genuinely cannot render in hardware
+ *    would otherwise fall back on every launch, which costs a broken window and
+ *    a restart each time.
+ *
+ * A user who turns hardware acceleration off in the settings is never second
+ * guessed: only fallbacks written by the escape hatch are retried.
+ */
+const SOFTWARE_RENDERING_RETRY_LIMIT = 2;
+
+function shouldDisableHardwareAcceleration() {
+	if (LaunchSettings.get('hardware_acceleration') != false) {
+		return false;
+	}
+
+	// Only an automatic fallback is worth retrying.
+	if (LaunchSettings.get('hardware_acceleration_fallback') != true) {
+		return true;
+	}
+
+	const attempts = LaunchSettings.get('hardware_acceleration_retries') || 0;
+	if (attempts >= SOFTWARE_RENDERING_RETRY_LIMIT) {
+		return true;
+	}
+
+	// Count the attempt but leave `hardware_acceleration` alone. Flipping it
+	// back to true here would take the early return above on the next launch
+	// and the counter would never advance, so the app would retry forever.
+	LaunchSettings.set('hardware_acceleration_retries', attempts + 1);
+	console.log('[Blockbench] Retrying hardware acceleration, attempt ' + (attempts + 1));
+	return false;
+}
+
+/**
+ * Called by the renderer once it has a working WebGL context. That is the proof
+ * the retry succeeded, so the fallback bookkeeping is cleared and the app stays
+ * on the GPU from then on instead of burning the remaining retries.
+ */
+function confirmHardwareAcceleration() {
+	if (LaunchSettings.get('hardware_acceleration_fallback') != true) return;
+	LaunchSettings.set('hardware_acceleration_fallback', false);
+	LaunchSettings.set('hardware_acceleration_retries', 0);
+	LaunchSettings.set('hardware_acceleration', true);
+	console.log('[Blockbench] Hardware acceleration confirmed working');
+}
+
+if (shouldDisableHardwareAcceleration()) {
 	app.disableHardwareAcceleration();
 	if (process.platform != 'win32') {
 		app.commandLine.appendSwitch('enable-unsafe-swiftshader');
@@ -226,6 +288,10 @@ app.on('open-file', function (event, path) {
 })
 
 ipcMain.on('edit-launch-setting', (event, arg) => {
+	if (arg.key === 'hardware_acceleration_confirmed' && arg.value === true) {
+		confirmHardwareAcceleration();
+		return;
+	}
 	LaunchSettings.set(arg.key, arg.value);
 })
 ipcMain.handle('get-launch-setting', (event, arg) => {

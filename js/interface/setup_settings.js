@@ -1,6 +1,6 @@
 import { AutoBackup } from "../auto_backup";
 import { changeImageEditor } from "../desktop";
-import { currentwindow } from "../native_apis";
+import { currentwindow, ipcRenderer } from "../native_apis";
 import { Setting, Settings, SettingsProfile } from "./settings";
 import { addStartScreenSection } from "./start_screen";
 
@@ -349,7 +349,49 @@ function setupSettings() {
 			settings.antialiasing_bleed_fix.set(false);
 			console.warn('Downgrading settings to support WebGL 1');
 		}
+
+		if (isApp) {
+			warnAboutSoftwareRendering();
+		}
 	}, 4*1000);
+
+	/**
+	 * Tell the user when the viewport is not running on the graphics card.
+	 *
+	 * Software rendering is the usual reason the editor sits at about 10 frames
+	 * per second, but nothing in the interface says so: the editor just feels
+	 * broken. Naming the cause turns an unexplained slowdown into something the
+	 * user can act on.
+	 */
+	function warnAboutSoftwareRendering() {
+		let renderer = Preview.selected && Preview.selected.renderer;
+		if (!renderer || !window.Blockbench?.setup_successful) return;
+
+		try {
+			let gl = renderer.getContext();
+			let info = gl.getExtension('WEBGL_debug_renderer_info');
+			let gpu = info ? gl.getParameter(info.UNMASKED_RENDERER_WEBGL) : '';
+			let software = /swiftshader|llvmpipe|software|basic render|microsoft basic/i.test(gpu || '');
+			if (!software) {
+				// A real GPU context. Tell the main process, so it stops retrying
+				// a fallback that is no longer needed.
+				ipcRenderer.send('edit-launch-setting', {key: 'hardware_acceleration_confirmed', value: true});
+				return;
+			}
+
+			console.warn('[Blockbench] Software rendering (' + (gpu || 'unknown renderer') + '); performance is reduced.');
+
+			// Pass the wording as the fallback so this works before the string is
+			// translated, and is picked up by translation tooling like any other
+			// tl() call.
+			Blockbench.showQuickMessage(
+				tl('message.software_rendering', undefined, 'Running without the graphics card. Enable "Hardware acceleration" in Settings and restart for much higher frame rates.'),
+				8000
+			);
+		} catch (err) {
+			console.warn('[Blockbench] Could not read the WebGL renderer', err);
+		}
+	}
 }
 function setupSettingsProfiles() {
 	if (localStorage.getItem('settings_profiles') != null) {

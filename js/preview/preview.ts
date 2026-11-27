@@ -410,6 +410,12 @@ export class Preview {
 					window.restartWithoutHardwareAcceleration = function() {
 
 						ipcRenderer.send('edit-launch-setting', {key: 'hardware_acceleration', value: false});
+						// Record that this was the automatic escape hatch rather than a
+						// deliberate choice. The main process retries these on a later
+						// launch, because software rendering is around 10 FPS and the
+						// cause (a driver, a display) can change between sessions.
+						ipcRenderer.send('edit-launch-setting', {key: 'hardware_acceleration_fallback', value: true});
+						ipcRenderer.send('edit-launch-setting', {key: 'hardware_acceleration_retries', value: 0});
 						settings.hardware_acceleration.set(false);
 
 						electron.app.relaunch();
