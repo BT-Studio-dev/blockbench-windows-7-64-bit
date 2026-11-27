@@ -45,6 +45,25 @@ The margin is deliberately wide. The affected machine renders through
 SwiftShader, which has less depth precision than a GPU, so a hairline clearance
 would still flicker.
 
+## Required ETF setting, before anything else
+
+Both packs document this and it is off by default. Without it ETF clamps the
+skin's alpha channel to fully opaque, which breaks the animated eyes and also
+hard-cuts the edges of any transparent layer such as sunglasses.
+
+1. Options > Resource Packs, then the creeper face button for the EMF/ETF menu
+2. Textures > Player skin settings
+3. Allow skin transparency > **All skins**
+4. Back out fully; the pack reloads with the red Mojang screen
+5. Restart the game if the eyes still look wrong
+
+Both packs also need EMF 2.0.2+ and ETF 6.0.1+. Remove AlphaSkins and
+CustomSkinLoader if present; both are obsolete and cause this.
+
+Try that setting on its own first. If the ragged edges disappear, this patch is
+not needed: it treats eyebrow geometry that crosses the lens, which is a
+separate fault.
+
 ## Install
 
 1. Remove or disable the original Just Expressions and Fresh Moves packs.
