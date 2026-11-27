@@ -97,17 +97,20 @@
 	</p>
 
 	<h2>What the patch changes</h2>
-	<p>Eight eyebrow overlay boxes move from <code>&minus;4.501</code> to <code>&minus;4.250</code>:</p>
+	<p>Eight second-layer eyebrow boxes move back, four per side. <strong>The left and right sides are not symmetric</strong> and never were &mdash; the right brow row sits in a submodel translated &minus;4.4 and the left in one translated &minus;4, so the same visual result needs different box values on each side:</p>
 	<table>
 		<thead><tr><th>Surface</th><th>Before</th><th>After</th></tr></thead>
 		<tbody>
 			<tr><td>Head face</td><td class="z">&minus;4.000</td><td class="z">&minus;4.000</td></tr>
-			<tr><td>Eyebrow overlays</td><td class="z" style="color:var(--bad)">&minus;4.501</td><td class="z" style="color:var(--good)">&minus;4.250</td></tr>
+			<tr><td>Right brows <code>5&ndash;8</code> (in a node at &minus;4.4)</td><td class="z" style="color:var(--bad)">&minus;4.550</td><td class="z" style="color:var(--good)">&minus;4.350</td></tr>
+			<tr><td>Left brows <code>5&ndash;8</code> (in a node at &minus;4.0)</td><td class="z" style="color:var(--bad)">&minus;4.550</td><td class="z" style="color:var(--good)">&minus;4.350</td></tr>
+			<tr><td>Brow row <code>9</code></td><td class="z">&minus;4.150</td><td class="z">&minus;4.150</td></tr>
 			<tr><td>Hat layer / your glasses</td><td class="z">&minus;4.500</td><td class="z" style="color:var(--good)">&minus;4.500</td></tr>
 		</tbody>
 	</table>
+	<p class="note">Both sides end up at the same place &minus;4.350, which is 0.150 behind the hat plane and 0.350 behind the face. The different starting values are why a naive find-and-replace on <code>&minus;0.55</code> would also have moved the first-layer brows, which were already correct.</p>
 	<div class="callout good">
-		<p><strong>The hat layer is untouched.</strong> Your glasses keep their geometry and size. Only the eyebrows recede a quarter of a unit, giving 0.25 clearance on both sides.</p>
+		<p><strong>The hat layer is untouched.</strong> Your glasses keep their geometry and size. Only the eyebrows recede, giving 0.15 clearance from the hat in front and 0.35 behind them.</p>
 	</div>
 	<div class="callout bad">
 		<p><strong>If you downloaded a pack before this page existed, throw it away.</strong> The first attempt raised the hat layer's <code>inflate</code> from 0.5 to 1.6, not realising OptiFine's inflate expands in both directions. That put the hat front at &minus;5.600 and made it 24&nbsp;percent oversized, which hides the player's own glasses instead of fixing the eyebrows.</p>
@@ -129,10 +132,9 @@
 	<h2>What is inside</h2>
 	<ul>
 		<li><code>assets/minecraft/emf/cem/player.jem</code> and <code>player_slim.jem</code>, the models EMF actually loads</li>
-		<li><code>assets/minecraft/emf/cem/player_face.jpm</code>, with the eyebrows moved</li>
-		<li><code>21-2/&hellip;/player_face.jpm</code>, the overlay that replaces the above from pack format 42, patched identically</li>
+		<li><code>assets/minecraft/emf/cem/player_face.jpm</code> and <code>21-2/&hellip;/player_face.jpm</code>, unmodified. Their brows are a separate set (<code>r_brows</code> at &minus;4.05) that is already clear of the hat, so they are shipped as-is.</li>
 		<li><code>assets/minecraft/optifine/cem/</code>, the same models under Fresh Moves' own path, so both loader layouts work</li>
-		<li>18 player skins, and <code>pack.mcmeta</code> written with the format your client expects</li>
+		<li>the eye texture, and <code>pack.mcmeta</code> written for the pack format your client expects</li>
 	</ul>
 	<p class="note">EMF reads <code>emf/cem</code> in preference to <code>optifine/cem</code>, so Just Expressions' model is the one that renders when both packs are installed. Both paths are shipped so the same zip works either way.</p>
 
