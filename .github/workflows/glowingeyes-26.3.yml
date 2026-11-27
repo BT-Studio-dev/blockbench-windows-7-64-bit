@@ -109,6 +109,38 @@ jobs:
           echo "--- last 30 lines, for the record ---"
           tail -30 /tmp/gradle-build.log || true
 
+      # Compile errors are the ones that matter now, and a single ::error::
+      # annotation truncates. This dedupes them: which distinct symbols are
+      # missing, and how many files touch each. That is the work list for the
+      # source port, in one place.
+      - name: Summarise compile errors
+        if: failure()
+        run: |
+          test -f /tmp/gradle-build.log || exit 0
+          echo "=== distinct missing symbols ==="
+          # "error: cannot find symbol" blocks name the symbol on a following line.
+          SYMS=$(grep -oE "symbol: +(class|variable|method|interface) [A-Za-z0-9_$.]+" /tmp/gradle-build.log \
+                 | sed 's/symbol: *//' | sort | uniq -c | sort -rn | head -25)
+          PKGS=$(grep -oE "package [a-z0-9_.]+ does not exist" /tmp/gradle-build.log \
+                 | sort | uniq -c | sort -rn | head -12)
+          NFILES=$(grep -cE "^[^:]+\\.java:[0-9]+: error:" /tmp/gradle-build.log || echo 0)
+          ERRORS=$(grep -E "^[^:]+\\.java:[0-9]+: error:" /tmp/gradle-build.log | head -25)
+
+          emit() { printf '%s' "$1" | tr '\n' ';' | sed 's/%/%25/g; s/\r//g' | cut -c1-850; }
+
+          if [ -n "$SYMS" ]; then
+            echo "::error title=Missing symbols (count name)::$(emit "$SYMS")"
+          fi
+          if [ -n "$PKGS" ]; then
+            echo "::error title=Missing packages::$(emit "$PKGS")"
+          fi
+          if [ -n "$ERRORS" ]; then
+            echo "::error title=First errors (${NFILES} lines)::$(emit "$ERRORS")"
+          fi
+          echo "--- symbols ---"; echo "$SYMS"
+          echo "--- packages ---"; echo "$PKGS"
+          echo "--- first errors ---"; echo "$ERRORS"
+
       - name: Upload the build log
         if: always()
         uses: actions/upload-artifact@v4
