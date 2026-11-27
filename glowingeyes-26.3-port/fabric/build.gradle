@@ -11,15 +11,20 @@ dependencies {
     // and configuration dies with "Failed to find official mojang mappings for
     // 26.3". Architectury's loom-no-remap exists for this exact reason.
 
-    include modApi("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
-    include modImplementation("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
+    // modApi / modImplementation / modCompileOnly are configurations that only
+    // exist when Loom has mappings to remap through. Under loom-no-remap they
+    // are simply absent: "Could not find method modApi()". The mod jars are
+    // already in their shipped, unremapped form, so the plain counterparts are
+    // the correct equivalents rather than a downgrade.
+    include api("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
+    include implementation("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
 
-    modCompileOnly "maven.modrinth:flashback:DDcDAzpe"
-    modCompileOnly "maven.modrinth:female-gender:wxfN7iwN"
-    modCompileOnly "maven.modrinth:replaymod:lrnVIO9F"
+    compileOnly "maven.modrinth:flashback:DDcDAzpe"
+    compileOnly "maven.modrinth:female-gender:wxfN7iwN"
+    compileOnly "maven.modrinth:replaymod:lrnVIO9F"
 
-    modImplementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
 }
 
 loom {
