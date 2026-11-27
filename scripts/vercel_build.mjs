@@ -16,6 +16,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
+import crypto from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {useBundle} from './index_html.mjs';
 
@@ -105,9 +106,30 @@ for (const file of ROOT_FILES) {
 // are siblings of it. Serving it from a subdirectory made every stylesheet
 // resolve one level too deep (/app/css/setup.css), and the compatibility check
 // then reported "Incompatible browser version" on a browser that is fine.
-fs.copyFileSync(path.join(root, 'index.html'), path.join(public_dir, 'index.html'));
 fs.mkdirSync(path.join(public_dir, 'dist'), {recursive: true});
-fs.copyFileSync(path.join(root, 'dist', 'bundle.js'), path.join(public_dir, 'dist', 'bundle.js'));
+
+// Publish the bundle under a name that changes with its contents.
+//
+// dist/bundle.js is referenced by a fixed name, and it was previously served
+// with a one year immutable cache. Browsers that loaded it once kept using that
+// copy forever, because immutable tells them not to revalidate, while the
+// uncached index.html kept being updated. The result was a new page driving an
+// old bundle, which shows up as a blank screen and as dialogs missing controls
+// that do exist in the source. A content addressed name gives every build a URL
+// that no browser has cached, so the fix reaches machines that are already
+// stuck, not only ones that visit for the first time.
+const bundle_path = path.join(root, 'dist', 'bundle.js');
+const bundle_hash = crypto.createHash('sha256').update(fs.readFileSync(bundle_path)).digest('hex').slice(0, 12);
+const bundle_name = `bundle.${bundle_hash}.js`;
+fs.copyFileSync(bundle_path, path.join(public_dir, 'dist', bundle_name));
+
+let shell = fs.readFileSync(path.join(root, 'index.html'), {encoding: 'utf-8'});
+shell = shell.replace('src="dist/bundle.js"', `src="dist/${bundle_name}"`);
+if (!shell.includes(`src="dist/${bundle_name}"`)) {
+	throw new Error('[vercel] could not point index.html at the hashed bundle');
+}
+fs.writeFileSync(path.join(public_dir, 'index.html'), shell);
+console.log(`[vercel] bundle published as dist/${bundle_name}`);
 
 // The download page does not depend on relatives, so it can live in its own
 // directory and link back up to the editor at /.
