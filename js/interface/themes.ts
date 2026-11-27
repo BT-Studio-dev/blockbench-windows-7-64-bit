@@ -751,12 +751,11 @@ export class CustomTheme {
 		document.getElementById('theme_thumbnail_css').textContent = thumbnailStyles;
 	}
 	load() {
-		if (CustomTheme.selected.source == 'custom' && CustomTheme.selected.name) {
-			// Backup
-			if (!CustomTheme.dialog.content_vue) CustomTheme.dialog.build();
-			CustomTheme.dialog.content_vue.backup = CustomTheme.selected.name;
-			CustomTheme.backup_data = JSON.stringify(CustomTheme.selected);
-		}
+		// The backup is for unsaved edits the user is about to lose. Merely
+		// picking another theme is not a loss, and the previous code took the
+		// name of the outgoing theme anyway, which announced "Copy of OLED was
+		// overwritten" every time the user switched theme. Custom themes are
+		// kept in their own stored list, so switching can never discard one.
 		CustomTheme.selected = this;
 		if (CustomTheme.dialog.content_vue) CustomTheme.dialog.content_vue.data = this;
 
@@ -877,14 +876,19 @@ export class CustomTheme {
 		return theme;
 	}
 	save() {
+		// A built-in theme must never be written over a stored custom one. The
+		// colour watcher fires while a built-in is merely selected, so saving it
+		// unconditionally replaced the user's own theme with e.g. OLED and their
+		// work disappeared on the next start. Built-ins are rebuilt from source
+		// on every start anyway, so there is nothing to keep for them.
+		if (this.source != 'custom') return;
+
 		localStorage.setItem('theme', JSON.stringify(this));
 		// A custom theme is one the user made and expects to keep, so it also
 		// goes into the list that is restored on startup. The `theme` key only
 		// holds whichever theme is active, so on its own it would lose every
 		// other custom theme as soon as a different one was picked.
-		if (this.source == 'custom') {
-			CustomTheme.saveCustomThemes();
-		}
+		CustomTheme.saveCustomThemes();
 	}
 	static saveCustomThemes() {
 		let custom = CustomTheme.themes.filter(theme => theme.source == 'custom');

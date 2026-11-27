@@ -958,14 +958,21 @@
 		grid-gap: 10px;
 	}
 	/* Sits directly under the theme grid: the colours picked in Color Scheme
-	   only survive as a theme of their own through this button. */
+	   only survive as a theme of their own through this button.
+	   It sticks to the bottom of the scrolling dialog because the remote theme
+	   list can be long enough to push it past the fold, which hid the one
+	   control that saves the user's colours. */
 	.theme_save_bar {
+		position: sticky;
+		bottom: 0;
+		z-index: 2;
 		display: flex;
 		align-items: center;
 		gap: 12px;
 		margin-top: 14px;
-		padding-top: 14px;
+		padding: 12px 0;
 		border-top: 1px solid var(--color-border);
+		background-color: var(--color-back);
 	}
 	.theme_save_button {
 		display: inline-flex;
