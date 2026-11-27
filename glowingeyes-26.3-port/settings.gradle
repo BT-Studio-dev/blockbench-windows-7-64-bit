@@ -1,4 +1,17 @@
 pluginManagement {
+    // dev.architectury.loom has no plugin marker artifact, so the id has to be
+    // redirected to the module that does exist. Without this, resolution fails
+    // with "could not resolve plugin artifact
+    // dev.architectury.loom:dev.architectury.loom.gradle.plugin:1.14.476"
+    // no matter which repositories are declared.
+    resolutionStrategy {
+        eachPlugin {
+            if (requested.id.id == 'dev.architectury.loom') {
+                useModule("dev.architectury:architectury-loom:${requested.version}")
+            }
+        }
+    }
+
     repositories {
         gradlePluginPortal()
         mavenCentral()
@@ -43,6 +56,10 @@ pluginManagement {
         maven {
             name = 'ParchmentMC'
             url = 'https://maven.parchmentmc.org'
+        }
+        maven {
+            name = 'Architectury'
+            url = 'https://maven.architectury.dev/'
         }
     }
 }
