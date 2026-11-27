@@ -29,8 +29,14 @@ const DESKTOP_BUNDLE = [
 	'\t<script defer src="dist/bundle.electron.js"></script>',
 ].join('\r\n');
 
-const CHECK_MODULE = '\t<script type="module">\r\n\t\tlet browser_check_passed';
-const CHECK_DEFERRED = '\t<script defer>\r\n\t\tlet browser_check_passed';
+// The loading check at the end of index.html polls for the app, so its tag is
+// the same in both builds and nothing needs rewriting here. The check used to
+// be an inline script with a defer attribute, but that attribute only applies
+// to scripts with a src, so it ran immediately and reported "An error occurred
+// while loading Blockbench" before the deferred bundle had even started.
+// Guard against that pattern coming back, because it is invisible at runtime
+// and only shows up as an error screen on a real machine.
+const BROKEN_INLINE_DEFER = /<script\s+defer\s*>/;
 
 export function useBundle(kind) {
 	let html = fs.readFileSync(index_path, {encoding: 'utf-8'});
@@ -46,14 +52,10 @@ export function useBundle(kind) {
 		html = html.replace(DESKTOP_BUNDLE, WEB_BUNDLE);
 	}
 
-	// The browser compatibility check must run after the app has started.
-	// Module scripts are deferred, classic scripts are not, so the check
-	// script needs `defer` in the desktop build and its module type back in
-	// the web build.
-	if (kind == 'desktop') {
-		html = html.replace(CHECK_MODULE, CHECK_DEFERRED);
-	} else {
-		html = html.replace(CHECK_DEFERRED, CHECK_MODULE);
+	if (BROKEN_INLINE_DEFER.test(html)) {
+		// index.html was edited or came from an older revision: report it
+		// instead of silently producing a build that shows a bogus error box.
+		return 'inline-defer';
 	}
 
 	fs.writeFileSync(index_path, html, {encoding: 'utf-8'});

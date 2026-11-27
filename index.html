@@ -198,31 +198,95 @@ the document has been parsed, just like the module script in the web build. -->
 	
 	</div>
 
-	<script defer>
-		let browser_check_passed = false;
-		// Browser compatibility check
-		try {
-			eval('[1].at(0)');
-			let stylesheet = document.getElementById('setup_stylesheet');
-			if (!stylesheet || !stylesheet.sheet?.cssRules?.length) {
-				throw 'Stylesheet not loaded';
+	<script>
+		// Show the loading error UI only when the app really failed to start.
+		//
+		// This check must not run before the app bundle. An inline script tag
+		// with a defer attribute looks like it waits, but the attribute only
+		// affects scripts that have a src attribute, so the check ran right
+		// away while the desktop bundle, a deferred classic script, had not
+		// even started. That is why the error box showed up without any
+		// detail text. Poll for the app instead of assuming that it ran.
+		(function () {
+			// Browser compatibility check. The stylesheet may still be loading
+			// when this runs, so give it a moment before calling the browser
+			// incompatible.
+			try {
+				eval('[1].at(0)');
+			} catch (err) {
+				console.error(err);
+				showIncompatibleBrowser();
+				return;
 			}
-			browser_check_passed = true;
-		} catch (err) {
-			console.error(err);
-			let error_element = document.querySelector('#loading_error_detail')
-			error_element.innerHTML = `Incompatible browser version. Please update your web browser.`;
-		}
-		if (!window.Blockbench?.setup_successful || !browser_check_passed) {
-			document.getElementById('loading_error_message').style.display = 'block'
-			if (window.require) {
-				require('@electron/remote').getCurrentWindow().webContents.openDevTools();
-			} else if (window.openDevTools) {
-				window.openDevTools();
+			let stylesheet_waited = 0;
+			(function check_stylesheet() {
+				let stylesheet = document.getElementById('setup_stylesheet');
+				let loaded = false;
+				try {
+					loaded = !!(stylesheet && stylesheet.sheet && stylesheet.sheet.cssRules && stylesheet.sheet.cssRules.length);
+				} catch (err) {
+					console.error(err);
+				}
+				if (!loaded) {
+					stylesheet_waited += 100;
+					if (stylesheet_waited >= 3000) {
+						showIncompatibleBrowser();
+						return;
+					}
+					setTimeout(check_stylesheet, 100);
+					return;
+				}
+				wait_for_boot();
+			})();
+
+			function showIncompatibleBrowser() {
+				let error_element = document.querySelector('#loading_error_detail')
+				error_element.innerHTML = `Incompatible browser version. Please update your web browser.`;
+				showLoadingError();
 			}
-		} else {
-			document.getElementById('loading_error_message').innerHTML = 'No loading errors...'
-		}
+
+			// Report a bundle that cannot be fetched at all right away, instead
+			// of waiting for the timeout below.
+			let bundle_script = document.querySelector('script[src*="bundle"]');
+			if (bundle_script) {
+				bundle_script.addEventListener('error', () => showLoadingError());
+			}
+
+			// Booting finished once the bundle sets Blockbench.setup_successful.
+			// Keep looking even after the error was shown, so a machine that is
+			// just slow still ends up with a working app instead of an error
+			// screen that stays on top of it forever.
+			function wait_for_boot() {
+				let waited = 0;
+				let error_shown = false;
+				(function check() {
+					if (window.Blockbench?.setup_successful) {
+						if (error_shown) {
+							document.getElementById('loading_error_message').style.display = 'none';
+						}
+						return;
+					}
+					waited += 100;
+					if (waited >= 45000 && !error_shown) {
+						error_shown = true;
+						showLoadingError();
+					}
+					// Keep polling for a while after reporting, then stop.
+					if (waited < 300000) {
+						setTimeout(check, 100);
+					}
+				})();
+			}
+
+			function showLoadingError() {
+				document.getElementById('loading_error_message').style.display = 'block'
+				if (window.require) {
+					require('@electron/remote').getCurrentWindow().webContents.openDevTools();
+				} else if (window.openDevTools) {
+					window.openDevTools();
+				}
+			}
+		})();
 	</script>
 </body>
 </html>
