@@ -14,8 +14,9 @@
 import fs from 'fs';
 import path from 'path';
 import vm from 'vm';
+import { fileURLToPath } from 'node:url';
 
-const root = import.meta.dirname ?? path.dirname(new URL(import.meta.url).pathname);
+const root = import.meta.dirname ?? path.dirname(fileURLToPath(import.meta.url));
 const bundle_path = path.join(root, 'dist', 'bundle.electron.js');
 
 if (!fs.existsSync(bundle_path)) {

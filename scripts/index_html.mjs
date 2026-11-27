@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 /**
  * Utility that switches the script tag in index.html between the web bundle
@@ -13,7 +14,11 @@ import path from 'node:path';
  * parsed, exactly like a module script does.
  */
 
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+// fileURLToPath, not new URL(...).pathname: on Windows the latter yields
+// "/D:/a/..." and path.resolve turns that into "\D:\a\...", which is not a
+// valid path and made the build fail on Windows runners.
+const here = fileURLToPath(import.meta.url);
+const root = path.resolve(path.dirname(here), '..');
 const index_path = path.join(root, 'index.html');
 
 const WEB_BUNDLE = '\t<script type="module" src="dist/bundle.js"></script>';

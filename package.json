@@ -153,7 +153,8 @@
 		"generate-types": "tsc --project tsconfig.json && node ./scripts/convert_types.mjs",
 		"publish-types": "npm publish ./types",
 		"generate-docs": "npm run generate-types && npx typedoc --options typedoc.json",
-		"preview": "node ./scripts/serve_web.mjs"
+		"preview": "node ./scripts/serve_web.mjs",
+		"publish-linux": "npm run build-electron && electron-builder --linux --publish=never"
 	},
 	"overrides": {
 		"three": "$three"

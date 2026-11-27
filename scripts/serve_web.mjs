@@ -15,6 +15,7 @@
  * Usage: node ./scripts/serve_web.mjs [--port 8811] [--host 0.0.0.0]
  */
 import http from 'node:http';
+import { fileURLToPath } from 'node:url';
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -28,7 +29,7 @@ function arg(name, fallback) {
 
 const port = parseInt(arg('port', process.env.PORT || '8811'));
 const host = arg('host', process.env.HOST || '0.0.0.0');
-const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // 1) index.html must load the web bundle before the browser build starts.
 const result = useBundle('web');
