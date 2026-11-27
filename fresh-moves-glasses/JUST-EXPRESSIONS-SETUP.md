@@ -1,4 +1,31 @@
-# Just Expressions + Fresh Moves: which model wins, and the glasses fix
+## What was actually wrong
+
+Just Expressions places its eyebrow overlay planes at z=-4.501. The vanilla
+hat layer, which is where a player's skin glasses live, renders at z=-4.500.
+That is a separation of 0.001 units, far below what the depth buffer can
+resolve, so which surface wins changes with camera angle. That is the
+"flickering from specific angles only" reported as Just Expressions issue #5,
+and it is why the flecks wander as you move rather than sitting still.
+
+```
+head face       -4.000
+brows_overlay   -4.501   <- 0.001 in front of the hat plane
+hat / glasses   -4.500
+```
+
+The fix moves the eight brow overlay planes to **-4.250**, midway between the
+face at -4.000 and the hat at -4.500, giving 0.25 units of clearance on both
+sides. The hat layer is **not** touched: its geometry and inflate stay exactly
+vanilla, because the hat layer is your glasses and moving it hides or scales
+them.
+
+## What a previous version of this pack got wrong
+
+It raised the hat layer's inflate from 0.5 to 1.6. OptiFine's inflate expands
+on **both** sides, so that put the hat front at -5.600 and grew the layer from
+9.0 to 11.2 units, 24 percent too large, in front of the player's own glasses.
+`scripts/verify_packs.mjs` now fails the build if the hat layer leaves the
+vanilla plane or changes size, and if any brow plane sits at or beyond -4.500.
 
 ## Which player model loads
 

@@ -29,33 +29,8 @@ jobs:
       - name: Build packs for every version
         run: node scripts/build_packs.mjs dist-packs
 
-      - name: Verify every pack parses and carries its hat layer fix
-        run: |
-          node -e "
-          const fs=require('fs'), path=require('path'), cp=require('child_process');
-          const dir='dist-packs';
-          const zips=fs.readdirSync(dir).filter(f=>f.endsWith('.zip'));
-          if (zips.length === 0) throw new Error('no packs were produced');
-          let bad=0;
-          for (const zip of zips) {
-            const tmp=fs.mkdtempSync('/tmp/pk-');
-            cp.execFileSync('unzip',['-q',path.join(dir,zip),'-d',tmp]);
-            const meta=JSON.parse(fs.readFileSync(path.join(tmp,'pack.mcmeta'),'utf8'));
-            if (!meta.pack || !meta.pack.pack_format) { console.error(zip+': no pack_format'); bad++; }
-            for (const jem of ['player.jem','player_slim.jem']) {
-              const p=path.join(tmp,'assets/minecraft/emf/cem',jem);
-              if (!fs.existsSync(p)) { console.error(zip+': missing '+jem); bad++; continue; }
-              const d=JSON.parse(fs.readFileSync(p,'utf8'));
-              const hw=(d.models||[]).find(m=>m.id==='headwear');
-              if (!hw) { console.error(zip+': no headwear in '+jem); bad++; continue; }
-              const box=hw.boxes[0];
-              const front=box.coordinates[2]-(box.sizeAdd||0)/2;
-              if (front > -4.501) { console.error(zip+': hat layer at '+front+' still behind the brows'); bad++; }
-            }
-          }
-          console.log('checked '+zips.length+' packs');
-          if (bad) process.exit(1);
-          "
+      - name: Verify every pack is built against the vanilla hat plane
+        run: node scripts/verify_packs.mjs dist-packs
 
       - name: Upload resource packs
         uses: actions/upload-artifact@v4
