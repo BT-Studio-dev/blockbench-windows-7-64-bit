@@ -405,6 +405,19 @@ export class CustomTheme {
 						])
 						menu.open(event);
 					},
+					saveAsNewTheme() {
+						// The same action the sidebar offers, reachable from the Select page
+						// so the button sits next to the themes it is going to add to.
+						if (this.data.source == 'custom') {
+							this.data.save();
+							Blockbench.showQuickMessage(tl('message.theme.saved', undefined, 'Theme saved'));
+							return;
+						}
+						let theme = CustomTheme.customizeTheme();
+						this.open_category = 'select';
+						Blockbench.showQuickMessage(tl('message.theme.saved_as_new', undefined, 'Saved as a new custom theme. Pick it under Select to keep it.'));
+						return theme;
+					},
 					tl
 				},
 				computed: {
@@ -462,6 +475,13 @@ export class CustomTheme {
 										</div>
 									</div>
 								</div>
+							</div>
+							<div class="theme_save_bar">
+								<button class="theme_save_button" @click="saveAsNewTheme()">
+									<i class="material-icons icon">add</i>
+									<span>${tl('layout.theme.save_as_new', undefined, 'Save as new theme')}</span>
+								</button>
+								<span class="theme_save_hint">${tl('layout.theme.save_as_new_hint', undefined, 'Keeps the colours you picked in Color Scheme as your own theme.')}</span>
 							</div>
 						</div>
 						<div v-show="open_category == 'color'">

@@ -2990,5 +2990,6 @@
 	"preview_model.minecraft_crafting_table": "Minecraft Crafting Table",
 	"layout.theme.save_as_new": "Save as new theme",
 	"message.theme.saved": "Theme saved",
-	"message.theme.saved_as_new": "Saved as a new custom theme. Pick it under Select to keep it."
+	"message.theme.saved_as_new": "Saved as a new custom theme. Pick it under Select to keep it.",
+	"layout.theme.save_as_new_hint": "Keeps the colours you picked in Color Scheme as your own theme."
 }
