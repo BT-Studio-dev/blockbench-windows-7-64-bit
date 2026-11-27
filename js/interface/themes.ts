@@ -1,6 +1,8 @@
 import DarkTheme from '../../themes/dark.bbtheme'
 import LightTheme from '../../themes/light.bbtheme'
 import ContrastTheme from '../../themes/contrast.bbtheme'
+import OledTheme from '../../themes/oled.bbtheme'
+import GlassTheme from '../../themes/glass.bbtheme'
 import { patchedAtob, text_measure_ctx } from '../util/util'
 import { Dialog } from './dialog'
 import { settings, Settings } from './settings'
@@ -162,6 +164,8 @@ export class CustomTheme {
 	static themes: CustomTheme[] = [
 		DarkTheme,
 		LightTheme,
+		OledTheme,
+		GlassTheme,
 		ContrastTheme
 	].map(theme_data => {
 		let theme = new CustomTheme().parseBBTheme(theme_data, true);
@@ -849,12 +853,111 @@ if (isApp && localStorage.getItem('themes_sideloaded')) {
 	CustomTheme.loadThumbnailStyles();
 }
 
+/**
+ * Follow the operating system's light/dark preference.
+ *
+ * The theme is otherwise a single stored choice, so "Sync with system" needs its
+ * own state. It is only a flag, `sync_theme_with_system`, and it deliberately
+ * does not overwrite the `theme` setting: turning the mode off leaves whatever
+ * the user had picked before in place instead of losing it.
+ *
+ * `prefers-color-scheme: dark` is the signal. Chromium reports exactly one of
+ * the two preference values, so a non-matching query means light. On Windows 7
+ * the query always reports light, because the operating system has no dark mode
+ * to report; "Sync with system" therefore resolves to Light there, which is the
+ * truth rather than a bug.
+ */
+class SystemThemeSync {
+	static active = false
+	static media_query: MediaQueryList | null = null
+	static listener: ((event: MediaQueryListEvent) => void) | null = null
+
+	static get prefers_dark(): boolean {
+		return SystemThemeSync.media_query?.matches === true
+	}
+
+	/**
+	 * Start or stop following the system preference. Returns the id of the theme
+	 * that should be applied.
+	 */
+	static setEnabled(enabled: boolean): string | null {
+		if (enabled) {
+			SystemThemeSync.start()
+			SystemThemeSync.apply()
+			return SystemThemeSync.targetThemeId()
+		}
+		SystemThemeSync.stop()
+		return null
+	}
+
+	/**
+	 * Built-in ids come from each theme's metadata, not from its file name: the
+	 * dark theme is `default` and the light one is `default_light`.
+	 */
+	static readonly LIGHT_ID = 'default_light'
+	static readonly DARK_ID = 'default'
+
+	static targetThemeId(): string {
+		return SystemThemeSync.prefers_dark ? SystemThemeSync.DARK_ID : SystemThemeSync.LIGHT_ID
+	}
+
+	static start() {
+		if (SystemThemeSync.active) return
+		SystemThemeSync.active = true
+
+		if (typeof window.matchMedia == 'function') {
+			SystemThemeSync.media_query = window.matchMedia('(prefers-color-scheme: dark)')
+			SystemThemeSync.listener = () => SystemThemeSync.apply()
+			// addEventListener is not available in older WebKit, and Electron 22
+			// is new enough, but the fallback costs nothing.
+			if (SystemThemeSync.media_query.addEventListener) {
+				SystemThemeSync.media_query.addEventListener('change', SystemThemeSync.listener)
+			} else if (SystemThemeSync.media_query.addListener) {
+				SystemThemeSync.media_query.addListener(SystemThemeSync.listener)
+			}
+		}
+	}
+
+	static stop() {
+		if (!SystemThemeSync.active) return
+		SystemThemeSync.active = false
+		if (SystemThemeSync.media_query && SystemThemeSync.listener) {
+			if (SystemThemeSync.media_query.removeEventListener) {
+				SystemThemeSync.media_query.removeEventListener('change', SystemThemeSync.listener)
+			} else if (SystemThemeSync.media_query.removeListener) {
+				SystemThemeSync.media_query.removeListener(SystemThemeSync.listener)
+			}
+		}
+		SystemThemeSync.media_query = null
+		SystemThemeSync.listener = null
+	}
+
+	static apply() {
+		if (!SystemThemeSync.active) return
+		let id = SystemThemeSync.targetThemeId()
+		let theme = CustomTheme.themes.find(theme => theme.id == id)
+		if (!theme || CustomTheme.selected.id == id) return
+		theme.load()
+		console.log('[Blockbench] System theme switched to ' + theme.name)
+	}
+}
+
+export const systemThemeSync = SystemThemeSync
+
 export function loadThemes() {
 	let stored_theme_data: ThemeData | undefined;
 	try {
 		if (localStorage.getItem('theme')) {
 			stored_theme_data = JSON.parse(localStorage.getItem('theme'))
 		}
+	} catch (err) {}
+
+	// "Sync with system" wins over the stored theme at boot, so the editor opens
+	// in whichever appearance the desktop is using rather than flashing the
+	// last manually picked one first.
+	let sync_with_system = false;
+	try {
+		sync_with_system = Settings.get('sync_theme_with_system') == true;
 	} catch (err) {}
 
 	if (stored_theme_data) {
@@ -886,6 +989,10 @@ export function loadThemes() {
 		} else if (stored_theme.source == 'custom') {
 			CustomTheme.loadTheme(stored_theme);
 		}
+	}
+
+	if (sync_with_system) {
+		systemThemeSync.setEnabled(true);
 	}
 }
 
@@ -929,6 +1036,7 @@ BARS.defineActions(function() {
 })
 const global = {
 	CustomTheme,
+	systemThemeSync: SystemThemeSync,
 };
 declare global {
 	const CustomTheme: typeof global.CustomTheme

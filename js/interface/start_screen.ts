@@ -5,6 +5,8 @@ import { app, fs } from "../native_apis";
 import { pureMarked } from "../util/util";
 import VersionUtil from '../util/version_util';
 import { ExperimentalSettings } from "./experimental_settings";
+import { CustomTheme, systemThemeSync } from "./themes";
+import { Settings, settings } from "./settings";
 
 export const StartScreen = {
 	loaders: {},
@@ -694,7 +696,14 @@ documentReady.then(() => {
 				languages: Language.options,
 				keymap: 'default',
 				keymap_changed: false,
-				theme: 'default',
+				theme: Settings.get('sync_theme_with_system') == true ? 'system' : ((): string => {
+					// `CustomTheme.selected` starts out as a placeholder whose id is
+					// `dark`, which is not the id of the built-in dark theme
+					// (`default`). On a fresh profile that would highlight no tile at
+					// all, so fall back to Dark, which is Blockbench's default.
+					let selected = CustomTheme.selected.id;
+					return CustomTheme.themes.some(theme => theme.id == selected) ? selected : 'default';
+				})(),
 				keymap_options: {
 					default: tl('action.load_keymap.default'),
 					mouse: tl('action.load_keymap.mouse'),
@@ -713,8 +722,19 @@ documentReady.then(() => {
 				},
 				loadTheme(theme_id) {
 					this.theme = theme_id;
+					// Picking a concrete appearance is an explicit choice, so it ends
+					// system syncing; otherwise the OS would keep overriding it.
+					if (settings.sync_theme_with_system) settings.sync_theme_with_system.set(false);
+					systemThemeSync.setEnabled(false);
 					let theme = CustomTheme.themes.find(t => t.id == theme_id);
 					if (theme) CustomTheme.loadTheme(theme);
+				},
+				loadSystemTheme() {
+					this.theme = 'system';
+					if (settings.sync_theme_with_system) settings.sync_theme_with_system.set(true);
+					systemThemeSync.setEnabled(true);
+					let current = CustomTheme.themes.find(t => t.id == systemThemeSync.targetThemeId());
+					if (current) CustomTheme.loadTheme(current);
 				},
 				getThemeThumbnailStyle(theme_id) {
 					let theme = CustomTheme.themes.find(t => t.id == theme_id);
@@ -760,10 +780,14 @@ documentReady.then(() => {
 					</div>
 					<div style="width: 640px;">
 						<label>${tl('dialog.settings.theme')}:</label>
-						<div class="quick_setup_theme" :class="{selected: theme == 'default'}" @click="loadTheme('default')"><div :style="getThemeThumbnailStyle('default')"></div>Dark</div>
+						<div class="quick_setup_themes">
+						<div class="quick_setup_theme" :class="{selected: theme == 'system'}" @click="loadSystemTheme()" title="Follow the system light or dark preference"><div class="quick_setup_theme_system"><i class="material-icons">brightness_auto</i></div>System</div>
 						<div class="quick_setup_theme" :class="{selected: theme == 'default_light'}" @click="loadTheme('default_light')"><div :style="getThemeThumbnailStyle('default_light')"></div>Light</div>
-						<div class="quick_setup_theme" :class="{selected: theme == 'contrast'}" @click="loadTheme('contrast')"><div :style="getThemeThumbnailStyle('contrast')"></div>Contrast</div>
+						<div class="quick_setup_theme" :class="{selected: theme == 'default'}" @click="loadTheme('default')"><div :style="getThemeThumbnailStyle('default')"></div>Dark</div>
+						<div class="quick_setup_theme" :class="{selected: theme == 'oled'}" @click="loadTheme('oled')"><div :style="getThemeThumbnailStyle('oled')"></div>OLED</div>
+						<div class="quick_setup_theme" :class="{selected: theme == 'glass'}" @click="loadTheme('glass')"><div :style="getThemeThumbnailStyle('glass')"></div>Glass</div>
 						<div class="quick_setup_theme more_themes" @click="openThemes()"><div><i class="material-icons">more_horiz</i></div>{{ tl('mode.start.quick_setup.more_themes') }}</div>
+						</div>
 					</div>
 				</section>
 			`

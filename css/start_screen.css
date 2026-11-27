@@ -574,6 +574,17 @@
 		cursor: inherit;
 		text-align: center;
 	}
+	/* Five options plus "More" no longer fit on one line in the dialog, so the
+	   row wraps instead of squeezing the labels into ellipses. */
+	.quick_setup_themes {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px 0;
+	}
+	.quick_setup_theme_system > .material-icons {
+		font-size: 18px;
+		vertical-align: top;
+	}
 	.quick_setup_theme:hover,
 	.quick_setup_theme.selected {
 		color: var(--color-light);

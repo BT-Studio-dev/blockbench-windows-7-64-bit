@@ -1,0 +1,27 @@
+/*
+id: oled
+name: OLED
+author: Blockbench Windows 7 build
+version: 1.0.0
+borders: true
+*/
+body {
+	--color-ui: #000000;
+	--color-back: #000000;
+	--color-dark: #000000;
+	--color-border: #141414;
+	--color-selected: #1c1c1c;
+	--color-elevated: #0a0a0a;
+	--color-button: #1a1a1a;
+	--color-bright_ui: #ffffff;
+	--color-accent: #3e90ff;
+	--color-frame: #000000;
+	--color-text: #b9b9c0;
+	--color-light: #ffffff;
+	--color-accent_text: #000000;
+	--color-bright_ui_text: #000000;
+	--color-subtle_text: #6f6f78;
+	--color-grid: #1e1e1e;
+	--color-wireframe: #4a6376;
+	--color-checkerboard: #000000;
+}
