@@ -71,6 +71,14 @@ export class Texture {
 		let tex = new THREE.Texture(this.canvas);
 		tex.magFilter = THREE.NearestFilter // Pixelated rendering
 		tex.minFilter = THREE.NearestFilter // Distance
+		// A nearest-filtered texture is sampled from its base level, so the mip
+		// chain is never read. Three.js still builds one by default, and for a
+		// non-power-of-two skin every level is a box filter over neighbouring
+		// texels. That is wasted upload work on each edit, and on a skin it also
+		// averages across UV island borders, which is how neighbouring pixels
+		// (for example an eye next to a lens) bleed into the wrong part at some
+		// zoom levels. Building the chain has no benefit here, so skip it.
+		tex.generateMipmaps = false;
 		tex.name = this.name;
 		img.tex = tex;
 
@@ -104,6 +112,10 @@ export class Texture {
 				tex.minFilter = mat.map.minFilter;
 				tex.wrapS = mat.map.wrapS;
 				tex.wrapT = mat.map.wrapT;
+				// This replacement texture has to keep the mipmap choice too.
+				// Copying only the filters would quietly turn mipmap generation
+				// back on, which is the default on a new Texture.
+				tex.generateMipmaps = false;
 				tex.name = this.name;
 				mat.map = tex;
 				mat.uniforms.map.value = tex;
