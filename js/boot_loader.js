@@ -86,12 +86,22 @@ if (isApp) {
 
 if (!isApp) {
 	async function registerSW() {
-		if ('serviceWorker' in navigator) {
-			try {
-				await navigator.serviceWorker.register('./service_worker.js');
-			} catch (err) {
-				console.log(err)
+		if (!('serviceWorker' in navigator)) return;
+		try {
+			// `service_worker.js` is not part of this build, so the registration
+			// 404s. Remove any worker that an earlier deploy left behind: a stale
+			// worker keeps serving the cached bundle it was installed with, and a
+			// cached bundle against a newer index.html leaves the page blank no
+			// matter how often the user reloads.
+			let registrations = await navigator.serviceWorker.getRegistrations();
+			if (registrations.length) {
+				await Promise.all(registrations.map(registration => registration.unregister()));
+				console.log('[Blockbench] Removed ' + registrations.length + ' outdated service worker(s)');
 			}
+			let cache_names = await caches.keys();
+			await Promise.all(cache_names.map(name => caches.delete(name)));
+		} catch (err) {
+			console.log(err)
 		}
 	}
 	registerSW();
