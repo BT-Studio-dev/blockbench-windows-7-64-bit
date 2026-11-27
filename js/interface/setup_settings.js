@@ -351,9 +351,11 @@ function setupSettings() {
 			console.warn('Downgrading settings to support WebGL 1');
 		}
 
-		if (isApp) {
-			warnAboutSoftwareRendering();
-		}
+		// Software rendering hits the browser just as hard as the desktop app,
+		// and a browser can fall back to it silently (blocklisted driver, no
+		// GPU process, remote desktop). Checking on both platforms turns an
+		// unexplained 6 FPS into something the user can act on.
+		warnAboutSoftwareRendering();
 	}, 4*1000);
 
 	/**
@@ -375,8 +377,11 @@ function setupSettings() {
 			let software = /swiftshader|llvmpipe|software|basic render|microsoft basic/i.test(gpu || '');
 			if (!software) {
 				// A real GPU context. Tell the main process, so it stops retrying
-				// a fallback that is no longer needed.
-				ipcRenderer.send('edit-launch-setting', {key: 'hardware_acceleration_confirmed', value: true});
+				// a fallback that is no longer needed. The browser has no main
+				// process to tell, and there is no ipcRenderer there.
+				if (isApp) {
+					ipcRenderer.send('edit-launch-setting', {key: 'hardware_acceleration_confirmed', value: true});
+				}
 				return;
 			}
 
@@ -384,9 +389,12 @@ function setupSettings() {
 
 			// Pass the wording as the fallback so this works before the string is
 			// translated, and is picked up by translation tooling like any other
-			// tl() call.
+			// tl() call. The advice differs by platform: a browser has no
+			// hardware acceleration switch, the desktop app does.
 			Blockbench.showQuickMessage(
-				tl('message.software_rendering', undefined, 'Running without the graphics card. Enable "Hardware acceleration" in Settings and restart for much higher frame rates.'),
+				isApp
+					? tl('message.software_rendering', undefined, 'Running without the graphics card. Enable "Hardware acceleration" in Settings and restart for much higher frame rates.')
+					: tl('message.software_rendering_browser', undefined, 'Your browser is rendering without the graphics card, which is why this is slow. Turn on hardware acceleration in the browser settings, or use Chrome, Edge or Firefox on a machine with a working graphics driver.'),
 				8000
 			);
 		} catch (err) {
