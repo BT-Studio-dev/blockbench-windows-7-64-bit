@@ -28,15 +28,48 @@
 	<script>
 		if (typeof module === 'object') {window.module = module; module = undefined;}//jQuery Fix
 		
-		if (localStorage.getItem('theme')) {
+		// Storage is not always available. When a browser blocks site data the
+		// very first getItem throws a SecurityError, and because that call used
+		// to sit outside this try block it killed the whole inline script, so
+		// the error reporting below was never installed and the page stayed
+		// blank with no explanation at all. Probe storage once and fall back to
+		// an in memory store, so the editor still runs for the session.
+		(function () {
+			let usable = false;
 			try {
+				localStorage.setItem('__bb_probe', '1');
+				localStorage.removeItem('__bb_probe');
+				usable = true;
+			} catch (err) {
+				console.warn('[Blockbench] Site data is blocked, keeping settings in memory for this session.', err);
+			}
+			if (!usable) {
+				let memory = {};
+				let shim = {
+					getItem: key => (key in memory ? memory[key] : null),
+					setItem: (key, value) => { memory[key] = String(value); },
+					removeItem: key => { delete memory[key]; },
+					clear: () => { memory = {}; },
+					key: index => Object.keys(memory)[index] ?? null,
+				};
+				Object.defineProperty(shim, 'length', {get: () => Object.keys(memory).length});
+				try {
+					Object.defineProperty(window, 'localStorage', {value: shim, configurable: true});
+				} catch (err) {
+					console.error(err);
+				}
+			}
+		})();
+
+		try {
+			if (localStorage.getItem('theme')) {
 				stored_theme = JSON.parse(localStorage.getItem('theme'));
 				let dark_color = stored_theme.colors.dark;
 				if (dark_color) {
 					document.getElementById('theme_css').textContent = `@layer theme {body {--color-dark: ${dark_color};}};`
 				}
-			} catch (err) {}
-		}
+			}
+		} catch (err) {}
 		window.ErrorLog = [];
 		// A failure during boot used to leave a completely blank page: the detail
 		// text was written into #loading_error_detail, but nothing ever made that
@@ -92,7 +125,7 @@
 	<!-- Desktop build: loaded as a classic script instead of an ES module, because module
 scripts are requested with CORS and fail for local files. `defer` keeps it running after
 the document has been parsed, just like the module script in the web build. -->
-	<script defer src="dist/bundle.electron.js"></script>
+<script defer src="dist/bundle.electron.js"></script>
 
 	<div style="display: none;"></div>
 
