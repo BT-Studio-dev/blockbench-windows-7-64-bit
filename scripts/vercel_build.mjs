@@ -140,6 +140,42 @@ fs.copyFileSync(
 );
 copy_dir(path.join(root, 'publisher'), path.join(public_dir, 'publisher'));
 
+// The Fresh Moves glasses fix gets its own page and its own zips.
+//
+// `publisher/fresh-moves/` is not reachable on its own because `publisher/` is
+// only copied wholesale under /publisher, and that path also carries the
+// download page. So the page is copied to /fresh-moves for the URL and its
+// zips are copied to /download/fresh-moves for the links the page generates.
+fs.mkdirSync(path.join(public_dir, 'fresh-moves'), {recursive: true});
+fs.copyFileSync(
+	path.join(root, 'publisher', 'fresh-moves', 'index.html'),
+	path.join(public_dir, 'fresh-moves', 'index.html')
+);
+for (const script of ['site.js', 'list.js']) {
+	fs.copyFileSync(
+		path.join(root, 'publisher', 'fresh-moves', script),
+		path.join(public_dir, 'fresh-moves', script)
+	);
+}
+
+const pack_dir = path.join(root, 'fresh-moves-glasses', 'builds');
+if (fs.existsSync(pack_dir)) {
+	const packs = fs.readdirSync(pack_dir).filter(name => name.endsWith('.zip'));
+	if (packs.length === 0) {
+		throw new Error('[vercel] fresh-moves-glasses/builds exists but holds no zips');
+	}
+	fs.mkdirSync(path.join(public_dir, 'download', 'fresh-moves'), {recursive: true});
+	for (const pack of packs) {
+		fs.copyFileSync(
+			path.join(pack_dir, pack),
+			path.join(public_dir, 'download', 'fresh-moves', pack)
+		);
+	}
+	console.log(`[vercel] published ${packs.length} Fresh Moves fix packs`);
+} else {
+	throw new Error('[vercel] fresh-moves-glasses/builds is missing; the fix page would have no downloads');
+}
+
 const bytes = directory_size(public_dir);
 console.log(`[vercel] public/ assembled: ${(bytes / 1024 / 1024).toFixed(1)} MB`);
 

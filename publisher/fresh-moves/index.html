@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>Fresh Moves glasses fix</title>
+	<meta name="description" content="A patched player model for Just Expressions and Fresh Moves that stops eyebrows drawing through sunglasses. One download per Minecraft version.">
+	<link rel="icon" href="/favicon.png">
+	<style>
+		:root {
+			color-scheme: dark;
+			--bg: #17181c;
+			--panel: #1f2127;
+			--line: #2c2f37;
+			--text: #d7dae1;
+			--subtle: #8f95a3;
+			--accent: #4da6ff;
+			--warn: #ffcc66;
+			--bad: #ff8f8f;
+			--good: #7fd48a;
+		}
+		* { box-sizing: border-box; }
+		body {
+			margin: 0;
+			background: var(--bg);
+			color: var(--text);
+			font: 16px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+		}
+		main { max-width: 880px; margin: 0 auto; padding: 64px 24px 96px; }
+		h1 { font-size: clamp(2rem, 6vw, 3rem); line-height: 1.15; margin: 0 0 8px; letter-spacing: -0.02em; }
+		.lede { color: var(--subtle); font-size: 1.125rem; margin: 0 0 40px; max-width: 62ch; }
+		h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--subtle); margin: 48px 0 16px; }
+		h3 { font-size: 1rem; margin: 28px 0 8px; }
+		a { color: var(--accent); }
+		.card {
+			display: flex; align-items: baseline; gap: 12px;
+			background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+			padding: 16px 22px; margin: 0 0 10px; color: inherit; text-decoration: none;
+			transition: border-color 0.15s, transform 0.15s;
+		}
+		.card:hover, .card:focus-visible { border-color: var(--accent); transform: translateY(-1px); }
+		.card .ver { font-variant-numeric: tabular-nums; font-weight: 600; min-width: 7ch; }
+		.card .fmt { color: var(--subtle); font-size: 0.875rem; font-variant-numeric: tabular-nums; min-width: 12ch; }
+		.card .size { color: var(--subtle); font-size: 0.875rem; margin-left: auto; font-variant-numeric: tabular-nums; }
+		.card.primary-version { border-color: var(--accent); }
+		.pill { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; background: var(--accent); color: #08121d; border-radius: 99px; padding: 2px 10px; font-weight: 700; }
+		.steps { counter-reset: step; list-style: none; padding: 0; }
+		.steps li { counter-increment: step; position: relative; padding-left: 44px; margin: 0 0 18px; }
+		.steps li::before {
+			content: counter(step); position: absolute; left: 0; top: 0;
+			width: 28px; height: 28px; border-radius: 50%;
+			background: var(--panel); border: 1px solid var(--line);
+			display: grid; place-items: center; font-size: 0.875rem; color: var(--subtle);
+		}
+		.steps code { display: inline-block; background: #0f1116; border: 1px solid var(--line); border-radius: 5px; padding: 1px 7px; font-size: 0.9em; }
+		table { width: 100%; border-collapse: collapse; margin: 12px 0 8px; font-size: 0.9375rem; }
+		th, td { text-align: left; padding: 8px 12px 8px 0; border-bottom: 1px solid var(--line); }
+		th { color: var(--subtle); font-weight: 600; font-size: 0.8125rem; text-transform: uppercase; letter-spacing: 0.06em; }
+		td.z { font-variant-numeric: tabular-nums; }
+		.callout { border-left: 3px solid var(--warn); background: #221f18; padding: 14px 20px; border-radius: 0 10px 10px 0; margin: 20px 0; }
+		.callout.bad { border-left-color: var(--bad); background: #241a1a; }
+		.callout.good { border-left-color: var(--good); background: #17211a; }
+		.callout p { margin: 0.4em 0; }
+		code { background: #0f1116; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font-size: 0.9em; }
+		ul li { margin: 0.35em 0; }
+		.note { color: var(--subtle); font-size: 0.9rem; }
+		footer { margin-top: 56px; color: var(--subtle); font-size: 0.875rem; border-top: 1px solid var(--line); padding-top: 20px; }
+	</style>
+</head>
+<body>
+<main>
+	<h1>Fresh Moves glasses fix</h1>
+	<p class="lede">
+		Just Expressions puts its eyebrow overlay planes one thousandth of a unit in
+		front of the hat layer. That is far too small for the depth buffer to resolve,
+		so whether eyebrows or sunglasses win changes with camera angle. This patch
+		moves the eyebrows back and leaves everything else alone.
+		<a href="/">Back to the editor</a>
+	</p>
+
+	<h2>The problem, measured</h2>
+	<p>The player model has three parallel planes at the front of the face:</p>
+	<table>
+		<thead><tr><th>Surface</th><th>Front z</th><th>Gap to next</th></tr></thead>
+		<tbody>
+			<tr><td>Head face</td><td class="z">&minus;4.000</td><td class="z">0.501</td></tr>
+			<tr><td>Eyebrow overlays (8 boxes)</td><td class="z">&minus;4.501</td><td class="z" style="color:var(--bad)">0.001 &larr; too small</td></tr>
+			<tr><td>Hat layer, where skin glasses live</td><td class="z">&minus;4.500</td><td class="z">&mdash;</td></tr>
+		</tbody>
+	</table>
+	<p>
+		A 0.001 gap is below the precision of the depth buffer at normal view
+		distances. The two surfaces therefore alternate, which is what produces
+		edges that shimmer and move as the camera turns. This is
+		<a href="https://github.com/IthanMendoza/Just-Expressions/issues/5">Just Expressions issue #5</a>,
+		reported for Minecraft 26.2 and still open.
+	</p>
+
+	<h2>What the patch changes</h2>
+	<p>Eight eyebrow overlay boxes move from <code>&minus;4.501</code> to <code>&minus;4.250</code>:</p>
+	<table>
+		<thead><tr><th>Surface</th><th>Before</th><th>After</th></tr></thead>
+		<tbody>
+			<tr><td>Head face</td><td class="z">&minus;4.000</td><td class="z">&minus;4.000</td></tr>
+			<tr><td>Eyebrow overlays</td><td class="z" style="color:var(--bad)">&minus;4.501</td><td class="z" style="color:var(--good)">&minus;4.250</td></tr>
+			<tr><td>Hat layer / your glasses</td><td class="z">&minus;4.500</td><td class="z" style="color:var(--good)">&minus;4.500</td></tr>
+		</tbody>
+	</table>
+	<div class="callout good">
+		<p><strong>The hat layer is untouched.</strong> Your glasses keep their geometry and size. Only the eyebrows recede a quarter of a unit, giving 0.25 clearance on both sides.</p>
+	</div>
+	<div class="callout bad">
+		<p><strong>If you downloaded a pack before this page existed, throw it away.</strong> The first attempt raised the hat layer's <code>inflate</code> from 0.5 to 1.6, not realising OptiFine's inflate expands in both directions. That put the hat front at &minus;5.600 and made it 24&nbsp;percent oversized, which hides the player's own glasses instead of fixing the eyebrows.</p>
+	</div>
+
+	<h2>Download</h2>
+	<p class="note">One file per Minecraft version, because the pack format changed. Pick the one matching your game version.</p>
+	<div id="downloads"></div>
+
+	<h2>Install</h2>
+	<ol class="steps">
+		<li><strong>Set the ETF option first.</strong> Both packs require it and it is off by default. Options &rarr; Resource Packs &rarr; click the <em>creeper face</em> button &rarr; Textures &rarr; Player skin settings &rarr; set <code>Allow skin transparency</code> to <code>All skins</code>. Without it, ETF forces the skin's alpha channel fully opaque, which breaks the animated eyes and hard-cuts the edge of any semi-transparent layer.</li>
+		<li><strong>Remove the old packs.</strong> Delete or disable Just Expressions, Fresh Moves, and any earlier version of this patch. Two copies of the same model only fight.</li>
+		<li><strong>Drop the zip into <code>resourcepacks</code></strong> and enable it in the game.</li>
+		<li><strong>Check the mods.</strong> This needs Entity Model Features 2.0.2 or newer and Entity Texture Features 6.0.1 or newer. Delete AlphaSkins and CustomSkinLoader if you have them; both are obsolete and cause black eyes.</li>
+		<li><strong>Restart the game</strong> if the eyes still look wrong. ETF caches skin data.</li>
+	</ol>
+
+	<h2>What is inside</h2>
+	<ul>
+		<li><code>assets/minecraft/emf/cem/player.jem</code> and <code>player_slim.jem</code>, the models EMF actually loads</li>
+		<li><code>assets/minecraft/emf/cem/player_face.jpm</code>, with the eyebrows moved</li>
+		<li><code>21-2/&hellip;/player_face.jpm</code>, the overlay that replaces the above from pack format 42, patched identically</li>
+		<li><code>assets/minecraft/optifine/cem/</code>, the same models under Fresh Moves' own path, so both loader layouts work</li>
+		<li>18 player skins, and <code>pack.mcmeta</code> written with the format your client expects</li>
+	</ul>
+	<p class="note">EMF reads <code>emf/cem</code> in preference to <code>optifine/cem</code>, so Just Expressions' model is the one that renders when both packs are installed. Both paths are shipped so the same zip works either way.</p>
+
+	<footer>
+		<div>Generated from <a href="https://github.com/BT-Studio-dev/blockbench-windows-7-64-bit">the repository</a>. Models by FreshLX and Ithan; this is an independent compatibility patch.</div>
+	</footer>
+</main>
+<script src="/publisher/fresh-moves/site.js"></script>
+<script src="/publisher/fresh-moves/list.js"></script>
+</body>
+</html>
