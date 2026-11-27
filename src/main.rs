@@ -43,22 +43,39 @@ async fn handler(req: Request) -> Result<Response<ResponseBody>, Error> {
     let path = req.uri().path().to_owned();
     let method = req.method().as_str().to_owned();
 
+    // Declared API routes. Everything here is a GET.
     match path.as_str() {
-        "/api/blockbench/health" => Ok(json(200, &health_json())),
-        "/api/blockbench/version" => Ok(json(200, &version_json())),
-        _ if path.starts_with("/api/") => Ok(json(404, &error_json("Unknown API route"))),
-        _ if method != "GET" && method != "HEAD" => {
-            Ok(json(405, &error_json("Method not allowed")))
-        }
-        // A path with a file extension that reached this point is a missing
-        // asset, not a page: the CDN would have served it otherwise.
-        _ if has_file_extension(&path) => Ok(not_found_html()),
-        // Known page documents. The static phase normally answers these, so
-        // arriving here means it did not run.
-        "/" | "/index.html" | "/download" | "/download/" => Ok(static_missing_html()),
-        // Every other path is a client-side route of the editor.
-        _ => Ok(redirect_to_editor(&path)),
+        "/api/blockbench/health" => return Ok(json(200, &health_json())),
+        "/api/blockbench/version" => return Ok(json(200, &version_json())),
+        _ => {}
     }
+
+    let readable = method == "GET" || method == "HEAD";
+
+    // Everything under /api/ that is not declared above is a 404, even for a
+    // method other than GET: the route does not exist at all.
+    if path.starts_with("/api/") {
+        return Ok(json(404, &error_json("Unknown API route")));
+    }
+
+    if !readable {
+        return Ok(json(405, &error_json("Method not allowed")));
+    }
+
+    // Known page documents. The static phase answers these, so arriving here
+    // means it did not run.
+    if matches!(path.as_str(), "/" | "/index.html" | "/download" | "/download/") {
+        return Ok(static_missing_html());
+    }
+
+    // A path with a file extension that reached this point is a missing asset,
+    // not a page: the CDN would have served it otherwise.
+    if has_file_extension(&path) {
+        return Ok(not_found_html());
+    }
+
+    // Every other path is a client-side route of the editor.
+    Ok(redirect_to_editor(&path))
 }
 
 /// Sends a client-side route to the editor, keeping the requested path so the
