@@ -109,6 +109,23 @@ Inside an esbuild bundle the `exports`/`module` shim always exists, so the
 library took its CommonJS branch and never assigned the global — startup
 crashed with `VuePrismEditor is not defined`.
 
+### Loading screen: false "An error occurred while loading Blockbench"
+
+The error overlay appeared over a perfectly healthy app, with no detail text
+under the heading. The check script at the end of `index.html`, which is meant
+to catch a bundle that never started, was an inline `<script defer>`. The
+`defer` attribute only applies to scripts that have a `src`, so an inline
+script carrying it still runs immediately, while the desktop bundle is a
+deferred classic script. The check therefore ran first, read
+`Blockbench.setup_successful` as `undefined`, and reported a failure before the
+app had booted. The upstream web build was fine because it uses a module
+script, and inline module scripts are deferred by specification.
+
+The check now polls for `Blockbench.setup_successful` instead of assuming it
+ran, waits for the stylesheet before judging browser compatibility, reports a
+bundle that fails to load at once, and clears the overlay again if a slow
+machine does finish starting.
+
 ### CSS
 
 `color-mix()` only exists from Chromium 111 on, and this build renders with
@@ -140,6 +157,9 @@ Checked in this repository:
 - **Chromium 108** (the engine Electron 22 ships): app starts, reports
   `5.2.2`, `newProject('free')` works, a cube renders through WebGL2 at
   ~56 FPS, outliner/UV/textures panels all populate.
+- **Loading screen**: the previous `index.html` reproduces the reported error
+  overlay exactly in Chromium 108 (app booted, overlay shown, detail line
+  empty); the fixed one boots straight to the start screen with no overlay.
 - **NSIS script**: `build/installer.nsh` is compile-checked against NSIS 3.04
   headers (LogicLib, WinVer, x64) with all three hooks expanded and asserted
   (`.arena/nsistest/validate.nsi`). It is not exercised end to end, because
