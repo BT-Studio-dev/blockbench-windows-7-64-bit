@@ -27,22 +27,26 @@ jobs:
       - name: Install rpm
         run: sudo apt-get update && sudo apt-get install -y rpm
 
-      # Capture the output: when the build fails, an ::error:: annotation makes
-      # the reason visible in the API and in the run summary, instead of an
-      # opaque "exit code 1".
+      # Capture the output and turn any failure into an ::error:: annotation.
+      # `|| status=$?` keeps the step running even when the build aborts, so the
+      # annotation is always emitted instead of an opaque "exit code 1".
       - name: Publish Linux build
         shell: bash
-        run: |
-          set -o pipefail
-          npm run publish-linux 2>&1 | tee /tmp/linux-build.log
-          status=$?
-          if [ $status -ne 0 ]; then
-            echo "::error::npm run publish-linux failed with exit code $status"
-            tail -n 40 /tmp/linux-build.log | sed 's/^/  /'
-          fi
-          exit $status
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
+        run: |
+          set -uo pipefail
+          status=0
+          npm run publish-linux > /tmp/linux-build.log 2>&1 || status=$?
+          echo "::group::npm run publish-linux (exit $status)"
+          cat /tmp/linux-build.log || true
+          echo "::endgroup::"
+          if [ "$status" -ne 0 ]; then
+            reason=$(grep -iE "error|⨯|Cannot|ENOENT|failed" /tmp/linux-build.log | tail -n 5 | tr "\n" " " | cut -c1-900)
+            echo "::error::npm run publish-linux failed (exit $status): $reason"
+            exit "$status"
+          fi
 
       - name: Upload Linux artifacts
         if: success()
