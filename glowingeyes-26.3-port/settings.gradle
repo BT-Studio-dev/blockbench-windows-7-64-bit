@@ -61,6 +61,14 @@ pluginManagement {
             name = 'Architectury'
             url = 'https://maven.architectury.dev/'
         }
+        // architectury-loom pulls de.oceanlabs.mcp:mcinjector at buildscript
+        // resolution time. The 'Forge' repository above is exclusiveContent
+        // filtered to net.minecraftforge, so mcinjector is not allowed to come
+        // from it; this plain entry is what makes it resolvable.
+        maven {
+            name = 'Forge (legacy)'
+            url = 'https://files.minecraftforge.net/maven/'
+        }
     }
 }
 
