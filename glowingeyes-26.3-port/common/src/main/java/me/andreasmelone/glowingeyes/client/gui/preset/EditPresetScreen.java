@@ -72,7 +72,7 @@ public class EditPresetScreen extends Screen {
                                 Component.translatable("gui.glowingeyes.apply"),
                                 button -> {
                                     this.future.complete(this.nameField.getValue());
-                                    Minecraft.getInstance().setScreen(this.parent);
+                                    Minecraft.getInstance().gui.screen(this.parent);
                                 }
                         ).pos(this.guiLeft + PADDING_X, this.guiTop + BUTTON_Y)
                         .size(buttonWidth, BUTTON_HEIGHT)
@@ -83,7 +83,7 @@ public class EditPresetScreen extends Screen {
                                 Component.translatable("gui.glowingeyes.cancel"),
                                 button -> {
                                     if (this.parent != null) {
-                                        Minecraft.getInstance().setScreen(this.parent);
+                                        Minecraft.getInstance().gui.screen(this.parent);
                                     }
                                 }
                         ).pos(this.guiLeft + PADDING_X + (BUTTON_SPACING * 2) + buttonWidth, this.guiTop + BUTTON_Y)
@@ -97,7 +97,7 @@ public class EditPresetScreen extends Screen {
         if(this.parent != null) {
             this.parent.render(ctx, 0, 0, partialTicks);
             GuiUtil.drawTransparentBlack(ctx);
-        } else super.renderBackground(ctx, mouseX, mouseY, partialTicks);
+        } else super.extractBackground(ctx, mouseX, mouseY, partialTicks);
         GuiUtil.drawBackground(
                 ctx, TextureLocations.UI_BACKGROUND_SLIM,
                 this.guiLeft, this.guiTop,
@@ -119,7 +119,7 @@ public class EditPresetScreen extends Screen {
     @Override
     public void onClose() {
         if(this.parent != null) {
-            Minecraft.getInstance().setScreen(this.parent);
+            Minecraft.getInstance().gui.screen(this.parent);
         }
     }
 
@@ -130,7 +130,7 @@ public class EditPresetScreen extends Screen {
     public static CompletableFuture<String> askForName(Screen parent, String elementName) {
         EditPresetScreen screen = new EditPresetScreen(parent);
         screen.elementName = elementName;
-        Minecraft.getInstance().setScreen(screen);
+        Minecraft.getInstance().gui.screen(screen);
         CompletableFuture<String> future = new CompletableFuture<>();
         screen.future = future;
         return future;

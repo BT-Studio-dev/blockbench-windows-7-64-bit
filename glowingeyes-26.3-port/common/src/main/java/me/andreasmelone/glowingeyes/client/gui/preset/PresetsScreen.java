@@ -111,7 +111,7 @@ public class PresetsScreen extends Screen {
                                             this.presetManager.applyPreset(this.selectedPreset);
                                         }
                                         this.presetManager.savePresets();
-                                        Minecraft.getInstance().setScreen(this.parent);
+                                        Minecraft.getInstance().gui.screen(this.parent);
                                     }
                                 })
                         .pos(this.guiLeft + BUTTONS_X, this.guiTop + BUTTONS_Y)
@@ -128,7 +128,7 @@ public class PresetsScreen extends Screen {
                                         GlowingEyesComponent.setToggledOn(Minecraft.getInstance().player, this.toggledState);
 
                                         this.presetManager.savePresets();
-                                        Minecraft.getInstance().setScreen(this.parent);
+                                        Minecraft.getInstance().gui.screen(this.parent);
                                     }
                                 })
                         .pos(this.guiLeft + BUTTONS_X, this.guiTop + BUTTONS_Y + (buttons * NORMAL_BUTTON_TOTAL_HEIGHT))
@@ -152,7 +152,7 @@ public class PresetsScreen extends Screen {
                                                 this.unselectPreset();
                                             }
                                         });
-                                    } else Minecraft.getInstance().setScreen(new CreatePresetScreen(this));
+                                    } else Minecraft.getInstance().gui.screen(new CreatePresetScreen(this));
                                 })
                         .pos(this.guiLeft + PRESETS_OFFSET_X, this.guiTop + EDIT_BUTTON_Y + ((PAGE_SIZE + 1) * PRESET_BUTTON_TOTAL_HEIGHT))
                         .size(BigSelectableButton.WIDTH / 2 - (EDIT_BUTTON_SPACING * 2), NORMAL_BUTTON_HEIGHT)
@@ -233,7 +233,7 @@ public class PresetsScreen extends Screen {
         if(this.parent != null) {
             this.parent.render(ctx, 0, 0, partialTicks);
             GuiUtil.drawTransparentBlack(ctx);
-        } else super.renderBackground(ctx, mouseX, mouseY, partialTicks);
+        } else super.extractBackground(ctx, mouseX, mouseY, partialTicks);
         GuiUtil.drawBackground(
                 ctx, TextureLocations.UI_BACKGROUND_BROAD,
                 this.guiLeft, this.guiTop,
@@ -355,7 +355,7 @@ public class PresetsScreen extends Screen {
         this.presetManager.savePresets();
 
         if (this.parent != null) {
-            Minecraft.getInstance().setScreen(this.parent);
+            Minecraft.getInstance().gui.screen(this.parent);
         }
     }
 

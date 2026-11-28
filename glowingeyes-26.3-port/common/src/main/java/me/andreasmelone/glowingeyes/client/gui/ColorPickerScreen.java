@@ -134,7 +134,7 @@ public class ColorPickerScreen extends Screen {
         if(this.parent != null) {
             this.parent.render(ctx, 0, 0, delta);
             GuiUtil.drawTransparentBlack(ctx);
-        } else super.renderBackground(ctx, mouseX, mouseY, delta);
+        } else super.extractBackground(ctx, mouseX, mouseY, delta);
         GuiUtil.drawBackground(ctx,
                 TextureLocations.UI_BACKGROUND_BROAD, this.guiLeft, this.guiTop, UI_WIDTH, UI_HEIGHT);
 
@@ -156,7 +156,7 @@ public class ColorPickerScreen extends Screen {
     @Override
     public void onClose() {
         if(this.parent != null) {
-            Minecraft.getInstance().setScreen(this.parent);
+            Minecraft.getInstance().gui.screen(this.parent);
         }
     }
 

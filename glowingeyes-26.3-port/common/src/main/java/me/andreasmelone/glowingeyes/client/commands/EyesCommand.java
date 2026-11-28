@@ -61,7 +61,7 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
         Minecraft mc = Minecraft.getInstance();
 
         GlowingEyes.SCHEDULER_CLIENT.runLater(() -> {
-            mc.setScreen(new EyesEditorScreen(mod));
+            mc.gui.screen(new EyesEditorScreen(mod));
         }, 1L);
 
         return 1;
@@ -159,10 +159,10 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
             Component clickableComponent = Component.literal(dumpFile.getName())
                     .withStyle(ChatFormatting.UNDERLINE)
                     .withStyle((style) -> style.withClickEvent(new ClickEvent.OpenFile(dumpFile.getAbsolutePath())));
-            mc.player.displayClientMessage(Component.literal("Successfully dumped eyes to ").append(clickableComponent), false);
+            mc.player.sendOverlayMessage(Component.literal("Successfully dumped eyes to ").append(clickableComponent), false);
         } catch (IOException e) {
             LogUtils.getLogger().error("Unable to dump", e);
-            mc.player.displayClientMessage(
+            mc.player.sendOverlayMessage(
                     Component.literal("Failed to dump! Try again or report to the mod author.").withStyle(ChatFormatting.RED), false);
         }
 
@@ -177,17 +177,17 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
         Color finalColor = mod.getModVariables().getFinalColor();
         boolean toggledOn = GlowingEyesComponent.isToggledOn(player);
 
-        player.displayClientMessage(Component.literal("Selected color: ")
+        player.sendOverlayMessage(Component.literal("Selected color: ")
                 .append(Component.literal(ColorType.HEX.get(selectedColor)))
                 .withStyle(Style.EMPTY.withColor(selectedColor.getRGB())), false);
-        player.displayClientMessage(Component.literal("Brightness: ")
+        player.sendOverlayMessage(Component.literal("Brightness: ")
                 .append(String.format("%.2f", brightness)), false);
-        player.displayClientMessage(Component.literal("Final color: ")
+        player.sendOverlayMessage(Component.literal("Final color: ")
                 .append(Component.literal(ColorType.HEX.get(finalColor)))
                 .withStyle(Style.EMPTY.withColor(finalColor.getRGB())), false);
-        player.displayClientMessage(Component.literal("Toggled ")
+        player.sendOverlayMessage(Component.literal("Toggled ")
                 .append(toggledOn ? "ON" : "OFF"), false);
-        player.displayClientMessage(Component.literal("Layout: ")
+        player.sendOverlayMessage(Component.literal("Layout: ")
                 .append(GlowingEyesComponent.getGlowingEyesMap(player).toString()), false);
 
         return 1;

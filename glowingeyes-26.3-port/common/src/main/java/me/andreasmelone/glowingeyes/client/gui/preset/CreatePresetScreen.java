@@ -59,7 +59,7 @@ public class CreatePresetScreen extends Screen {
                                 Component.translatable("gui.glowingeyes.create"),
                                 button -> {
                                     PresetManager.getInstance().createPreset(this.nameField.getValue(), GlowingEyesComponent.getGlowingEyesMap(Minecraft.getInstance().player));
-                                    Minecraft.getInstance().setScreen(this.parent);
+                                    Minecraft.getInstance().gui.screen(this.parent);
                                 }
                         ).pos(this.guiLeft + PADDING_X, this.guiTop + BUTTON_Y)
                         .size(buttonWidth, BUTTON_HEIGHT)
@@ -69,7 +69,7 @@ public class CreatePresetScreen extends Screen {
                 Button.builder(
                                 Component.translatable("gui.glowingeyes.cancel"),
                                 button -> {
-                                    Minecraft.getInstance().setScreen(this.parent);
+                                    Minecraft.getInstance().gui.screen(this.parent);
                                 }
                         ).pos(this.guiLeft + PADDING_X + (BUTTON_SPACING * 2) + buttonWidth, this.guiTop + BUTTON_Y)
                         .size(buttonWidth, BUTTON_HEIGHT)
@@ -82,7 +82,7 @@ public class CreatePresetScreen extends Screen {
         if (this.parent != null) {
             this.parent.render(ctx, 0, 0, partialTicks);
             GuiUtil.drawTransparentBlack(ctx);
-        } else super.renderBackground(ctx, mouseX, mouseY, partialTicks);
+        } else super.extractBackground(ctx, mouseX, mouseY, partialTicks);
         GuiUtil.drawBackground(ctx, TextureLocations.UI_BACKGROUND_SLIM, this.guiLeft, this.guiTop, UI_WIDTH, UI_HEIGHT);
 
         ctx.centeredText(this.font, Component.translatable("gui.glowingeyes.create.title"), this.width / 2, this.guiTop + TEXT_Y, Color.WHITE.getRGB());
@@ -93,7 +93,7 @@ public class CreatePresetScreen extends Screen {
     @Override
     public void onClose() {
         if (this.parent != null) {
-            Minecraft.getInstance().setScreen(this.parent);
+            Minecraft.getInstance().gui.screen(this.parent);
         }
     }
 

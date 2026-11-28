@@ -129,7 +129,7 @@ public class EyesEditorScreen extends Screen {
                 this.guiLeft + MENU_BUTTONS_X, 0,
                 BUTTON_WIDTH, BUTTON_HEIGHT,
                 TextureLocations.RESET_BUTTON,
-                button -> this.minecraft.setScreen(new ConfirmResetScreen(this))
+                button -> this.minecraft.gui.screen(new ConfirmResetScreen(this))
         );
         menuButtons.add(resetButton);
         this.addRenderableWidget(resetButton);
@@ -158,7 +158,7 @@ public class EyesEditorScreen extends Screen {
                 this.guiLeft + MENU_BUTTONS_X, 0,
                 BUTTON_WIDTH, BUTTON_HEIGHT,
                 TextureLocations.PRESET_MENU_BUTTON,
-                button -> Minecraft.getInstance().setScreen(new PresetsScreen(this))
+                button -> Minecraft.getInstance().gui.screen(new PresetsScreen(this))
         );
         menuButtons.add(presetMenuButton);
         this.addRenderableWidget(presetMenuButton);
@@ -169,7 +169,7 @@ public class EyesEditorScreen extends Screen {
                 this.guiLeft + MENU_BUTTONS_X, 0, // this is going to be set later on
                 BUTTON_WIDTH, BUTTON_HEIGHT,
                 TextureLocations.COLOR_PICKER_BUTTON,
-                button -> Minecraft.getInstance().setScreen(new ColorPickerScreen(this.mod, this))
+                button -> Minecraft.getInstance().gui.screen(new ColorPickerScreen(this.mod, this))
         );
         menuButtons.add(colorPickerButton);
         this.addRenderableWidget(colorPickerButton);
@@ -195,7 +195,7 @@ public class EyesEditorScreen extends Screen {
      */
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float deltaTime) {
-        super.renderBackground(ctx, mouseX, mouseY, deltaTime);
+        super.extractBackground(ctx, mouseX, mouseY, deltaTime);
 
         GuiUtil.drawBackground(ctx,
                 TextureLocations.UI_BACKGROUND_BROAD, this.guiLeft, this.guiTop, UI_WIDTH, UI_HEIGHT);

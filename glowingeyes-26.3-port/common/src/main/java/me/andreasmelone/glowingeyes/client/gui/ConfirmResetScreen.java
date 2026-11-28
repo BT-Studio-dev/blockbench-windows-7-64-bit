@@ -58,7 +58,7 @@ public class ConfirmResetScreen extends Screen {
                     if (this.parent != null) {
                         GlowingEyesComponent.setGlowingEyesMap(Minecraft.getInstance().player, new HashMap<>());
                         ClientGlowingEyesComponent.sendUpdate();
-                        Minecraft.getInstance().setScreen(this.parent);
+                        Minecraft.getInstance().gui.screen(this.parent);
                     }
                 }
             ).pos(confirmX, this.guiTop + BUTTON_Y)
@@ -71,7 +71,7 @@ public class ConfirmResetScreen extends Screen {
             Button.builder(Component.translatable("gui.glowingeyes.cancel"),
                 button -> {
                     if (this.parent != null) {
-                        Minecraft.getInstance().setScreen(this.parent);
+                        Minecraft.getInstance().gui.screen(this.parent);
                     }
                 }
             ).pos(cancelX, this.guiTop + BUTTON_Y)
@@ -85,7 +85,7 @@ public class ConfirmResetScreen extends Screen {
         if(this.parent != null) {
             this.parent.render(ctx, 0, 0, partialTicks);
             GuiUtil.drawTransparentBlack(ctx);
-        } else super.renderBackground(ctx, mouseX, mouseY, partialTicks);
+        } else super.extractBackground(ctx, mouseX, mouseY, partialTicks);
         GuiUtil.drawBackground(
                 ctx, TextureLocations.UI_BACKGROUND_SLIM,
                 this.guiLeft, this.guiTop,
@@ -123,7 +123,7 @@ public class ConfirmResetScreen extends Screen {
     @Override
     public void onClose() {
         if(this.parent != null) {
-            Minecraft.getInstance().setScreen(this.parent);
+            Minecraft.getInstance().gui.screen(this.parent);
         }
     }
 
