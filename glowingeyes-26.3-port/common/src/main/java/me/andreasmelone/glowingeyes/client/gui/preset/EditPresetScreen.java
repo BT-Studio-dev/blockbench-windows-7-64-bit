@@ -72,7 +72,7 @@ public class EditPresetScreen extends Screen {
                                 Component.translatable("gui.glowingeyes.apply"),
                                 button -> {
                                     this.future.complete(this.nameField.getValue());
-                                    Minecraft.getInstance().gui.screen(this.parent);
+                                    Minecraft.getInstance().gui.setScreen(this.parent);
                                 }
                         ).pos(this.guiLeft + PADDING_X, this.guiTop + BUTTON_Y)
                         .size(buttonWidth, BUTTON_HEIGHT)
@@ -83,7 +83,7 @@ public class EditPresetScreen extends Screen {
                                 Component.translatable("gui.glowingeyes.cancel"),
                                 button -> {
                                     if (this.parent != null) {
-                                        Minecraft.getInstance().gui.screen(this.parent);
+                                        Minecraft.getInstance().gui.setScreen(this.parent);
                                     }
                                 }
                         ).pos(this.guiLeft + PADDING_X + (BUTTON_SPACING * 2) + buttonWidth, this.guiTop + BUTTON_Y)
@@ -119,7 +119,7 @@ public class EditPresetScreen extends Screen {
     @Override
     public void onClose() {
         if(this.parent != null) {
-            Minecraft.getInstance().gui.screen(this.parent);
+            Minecraft.getInstance().gui.setScreen(this.parent);
         }
     }
 
@@ -130,7 +130,7 @@ public class EditPresetScreen extends Screen {
     public static CompletableFuture<String> askForName(Screen parent, String elementName) {
         EditPresetScreen screen = new EditPresetScreen(parent);
         screen.elementName = elementName;
-        Minecraft.getInstance().gui.screen(screen);
+        Minecraft.getInstance().gui.setScreen(screen);
         CompletableFuture<String> future = new CompletableFuture<>();
         screen.future = future;
         return future;

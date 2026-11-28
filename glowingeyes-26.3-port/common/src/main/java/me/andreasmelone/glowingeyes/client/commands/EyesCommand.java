@@ -60,7 +60,7 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
         Minecraft mc = Minecraft.getInstance();
 
         GlowingEyes.SCHEDULER_CLIENT.runLater(() -> {
-            mc.gui.screen(new EyesEditorScreen(mod));
+            mc.gui.setScreen(new EyesEditorScreen(mod));
         }, 1L);
 
         return 1;

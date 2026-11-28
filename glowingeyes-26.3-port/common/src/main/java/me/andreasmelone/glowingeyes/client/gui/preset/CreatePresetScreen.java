@@ -59,7 +59,7 @@ public class CreatePresetScreen extends Screen {
                                 Component.translatable("gui.glowingeyes.create"),
                                 button -> {
                                     PresetManager.getInstance().createPreset(this.nameField.getValue(), GlowingEyesComponent.getGlowingEyesMap(Minecraft.getInstance().player));
-                                    Minecraft.getInstance().gui.screen(this.parent);
+                                    Minecraft.getInstance().gui.setScreen(this.parent);
                                 }
                         ).pos(this.guiLeft + PADDING_X, this.guiTop + BUTTON_Y)
                         .size(buttonWidth, BUTTON_HEIGHT)
@@ -69,7 +69,7 @@ public class CreatePresetScreen extends Screen {
                 Button.builder(
                                 Component.translatable("gui.glowingeyes.cancel"),
                                 button -> {
-                                    Minecraft.getInstance().gui.screen(this.parent);
+                                    Minecraft.getInstance().gui.setScreen(this.parent);
                                 }
                         ).pos(this.guiLeft + PADDING_X + (BUTTON_SPACING * 2) + buttonWidth, this.guiTop + BUTTON_Y)
                         .size(buttonWidth, BUTTON_HEIGHT)
@@ -93,7 +93,7 @@ public class CreatePresetScreen extends Screen {
     @Override
     public void onClose() {
         if (this.parent != null) {
-            Minecraft.getInstance().gui.screen(this.parent);
+            Minecraft.getInstance().gui.setScreen(this.parent);
         }
     }
 

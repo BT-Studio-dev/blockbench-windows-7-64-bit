@@ -40,7 +40,7 @@ public class GlowingEyesKeybindings {
             }
             while(GlowingEyesKeybindings.EYES_EDITOR_MAPPING.consumeClick()) {
                 if(client.screen != null) return;
-                client.gui.screen(new EyesEditorScreen(mod));
+                client.gui.setScreen(new EyesEditorScreen(mod));
             }
         });
     }

@@ -60,7 +60,7 @@ public class ConfirmDeletionScreen extends Screen {
                                         this.future.complete(true);
                                     }
                                     if (this.parent != null) {
-                                        Minecraft.getInstance().gui.screen(this.parent);
+                                        Minecraft.getInstance().gui.setScreen(this.parent);
                                     }
                                 })
                         .pos(this.guiLeft + PADDING_X, this.guiTop + BUTTON_Y)
@@ -76,7 +76,7 @@ public class ConfirmDeletionScreen extends Screen {
                                         this.future.complete(false);
                                     }
                                     if (this.parent != null) {
-                                        Minecraft.getInstance().gui.screen(this.parent);
+                                        Minecraft.getInstance().gui.setScreen(this.parent);
                                     }
                                 })
                         .pos(this.guiLeft + PADDING_X + (BUTTON_SPACING * 2) + buttonWidth, this.guiTop + BUTTON_Y)
@@ -113,7 +113,7 @@ public class ConfirmDeletionScreen extends Screen {
     @Override
     public void onClose() {
         if (this.parent != null) {
-            Minecraft.getInstance().gui.screen(this.parent);
+            Minecraft.getInstance().gui.setScreen(this.parent);
         }
     }
 
@@ -124,7 +124,7 @@ public class ConfirmDeletionScreen extends Screen {
     public static CompletableFuture<Boolean> askToDelete(Screen parent, String element) {
         ConfirmDeletionScreen screen = new ConfirmDeletionScreen(parent);
         screen.deletedElement = element;
-        Minecraft.getInstance().gui.screen(screen);
+        Minecraft.getInstance().gui.setScreen(screen);
         CompletableFuture<Boolean> future = new CompletableFuture<>();
         screen.future = future;
         return future;

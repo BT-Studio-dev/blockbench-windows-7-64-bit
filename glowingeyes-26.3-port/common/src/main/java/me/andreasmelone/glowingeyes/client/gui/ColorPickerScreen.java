@@ -156,7 +156,7 @@ public class ColorPickerScreen extends Screen {
     @Override
     public void onClose() {
         if(this.parent != null) {
-            Minecraft.getInstance().gui.screen(this.parent);
+            Minecraft.getInstance().gui.setScreen(this.parent);
         }
     }
 

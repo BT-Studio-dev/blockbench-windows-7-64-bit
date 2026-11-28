@@ -99,7 +99,7 @@ public class SkinPartSelectorScreen extends Screen {
                 Button.builder(Component.translatable("gui.done"), (button) -> {
                     if (this.selected == null) return;
                     this.future.complete(this.selected);
-                    this.minecraft.gui.screen(this.parent);
+                    this.minecraft.gui.setScreen(this.parent);
                 }).pos(doneX, this.guiTop + BUTTON_X).size(width, BUTTON_HEIGHT).build()
         );
 
@@ -107,7 +107,7 @@ public class SkinPartSelectorScreen extends Screen {
         this.addRenderableWidget(
                 Button.builder(Component.translatable("gui.cancel"), (button) -> {
                     this.future.complete(null);
-                    this.minecraft.gui.screen(this.parent);
+                    this.minecraft.gui.setScreen(this.parent);
                 }).pos(cancelX, this.guiTop + BUTTON_X).size(width, BUTTON_HEIGHT).build()
         );
     }
@@ -235,7 +235,7 @@ public class SkinPartSelectorScreen extends Screen {
     public void onClose() {
         super.onClose();
         if (this.parent != null) {
-            Minecraft.getInstance().gui.screen(this.parent);
+            Minecraft.getInstance().gui.setScreen(this.parent);
         }
     }
 
@@ -243,7 +243,7 @@ public class SkinPartSelectorScreen extends Screen {
         CompletableFuture<ISkinPart> future = new CompletableFuture<>();
         SkinPartSelectorScreen screen = new SkinPartSelectorScreen(parent, skin, selected);
         screen.future = future;
-        Minecraft.getInstance().gui.screen(screen);
+        Minecraft.getInstance().gui.setScreen(screen);
         return future;
     }
 

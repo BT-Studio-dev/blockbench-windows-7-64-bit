@@ -39,7 +39,7 @@ public class GlowingEyesClientEvents {
         }
         while (GlowingEyesKeybindings.EYES_EDITOR_MAPPING.consumeClick()) {
             if (Minecraft.getInstance().screen != null) return;
-            Minecraft.getInstance().gui.screen(new EyesEditorScreen(this.mod));
+            Minecraft.getInstance().gui.setScreen(new EyesEditorScreen(this.mod));
         }
     }
 
