@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.platform.GLX;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
@@ -87,7 +86,7 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
             obj.addProperty("optifine_present", OptifineUtils.IS_OPTIFINE_PRESENT);
             obj.addProperty("iris_present", IrisUtils.IS_IRIS_PRESENT);
 
-            obj.addProperty("cpu", GLX._getCpuInfo());
+            obj.addProperty("cpu", System.getProperty("os.arch", "unknown"));
             obj.addProperty("gpu", RenderSystem.getDevice().getRenderer());
 
             JsonArray mods = new JsonArray();
