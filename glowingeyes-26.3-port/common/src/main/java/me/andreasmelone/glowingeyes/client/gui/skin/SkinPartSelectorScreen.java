@@ -203,7 +203,9 @@ public class SkinPartSelectorScreen extends Screen {
                         this.minecraft.font,
                         tooltipList,
                         (int) cursorX, (int) cursorY,
-                        DefaultTooltipPositioner.INSTANCE
+                        DefaultTooltipPositioner.INSTANCE,
+                        null,    // no background sprite override
+                        false    // do not draw the vanilla tooltip frame
                 );
             }
         }

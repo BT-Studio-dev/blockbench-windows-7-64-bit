@@ -34,7 +34,7 @@ public class GlowingEyesHeadLayer<T extends Player, S extends AvatarRenderState,
                     .submitModel(
                             this.getParentModel(), state, pose,
                             eyeRenderType, packedLight, OverlayTexture.NO_OVERLAY,
-                            null, state.outlineColor
+                            -1, null, state.outlineColor
                     );
         }
     }
