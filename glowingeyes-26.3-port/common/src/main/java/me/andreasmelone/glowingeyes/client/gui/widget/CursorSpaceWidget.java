@@ -2,7 +2,7 @@ package me.andreasmelone.glowingeyes.client.gui.widget;
 
 import me.andreasmelone.glowingeyes.client.util.TextureLocations;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -13,7 +13,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import org.intellij.lang.annotations.MagicConstant;
 import org.jetbrains.annotations.NotNull;
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 public class CursorSpaceWidget extends AbstractWidget implements GuiEventListener {
     private static final int PRIMARY_MOUSE_BUTTON = 0;
@@ -52,7 +52,7 @@ public class CursorSpaceWidget extends AbstractWidget implements GuiEventListene
     }
 
     @Override
-    protected void renderWidget(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float partialTick) {
+    protected void extractWidgetRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTick) {
         if(!this.isUsed()) return;
         ctx.pose().pushMatrix();
         ctx.pose().translate((float) this.cursorX, (float) this.cursorY);
@@ -76,26 +76,26 @@ public class CursorSpaceWidget extends AbstractWidget implements GuiEventListene
     public boolean keyPressed(KeyEvent event) {
         int keyCode = event.key();
         int modifiers = event.modifiers();
-        if(keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_SPACE) {
-            boolean isAltPressed = (modifiers & GLFW.GLFW_MOD_ALT) != 0;
+        if(keyCode == InputConstants.KEY_RETURN || keyCode == InputConstants.KEY_SPACE) {
+            boolean isAltPressed = (modifiers & InputConstants.MOD_ALT) != 0;
             return this.triggerClick(isAltPressed ? SECONDARY_MOUSE_BUTTON : PRIMARY_MOUSE_BUTTON);
         }
-        if(keyCode == GLFW.GLFW_KEY_UP) {
+        if(keyCode == InputConstants.KEY_UP) {
             this.cursorY = Math.clamp(this.cursorY - SENSITIVITY, this.getY(), this.getY() + this.height);
             this.triggerChange();
             return true;
         }
-        if(keyCode == GLFW.GLFW_KEY_DOWN) {
+        if(keyCode == InputConstants.KEY_DOWN) {
             this.cursorY = Math.clamp(this.cursorY + SENSITIVITY, this.getY(), this.getY() + this.height);
             this.triggerChange();
             return true;
         }
-        if(keyCode == GLFW.GLFW_KEY_LEFT) {
+        if(keyCode == InputConstants.KEY_LEFT) {
             this.cursorX = Math.clamp(this.cursorX - SENSITIVITY, this.getX(), this.getX() + this.width);
             this.triggerChange();
             return true;
         }
-        if(keyCode == GLFW.GLFW_KEY_RIGHT) {
+        if(keyCode == InputConstants.KEY_RIGHT) {
             this.cursorX = Math.clamp(this.cursorX + SENSITIVITY, this.getX(), this.getX() + this.width);
             this.triggerChange();
             return true;

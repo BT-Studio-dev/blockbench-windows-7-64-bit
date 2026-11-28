@@ -3,7 +3,7 @@ package me.andreasmelone.glowingeyes.client.gui.widget;
 import me.andreasmelone.glowingeyes.client.util.GuiUtil;
 import me.andreasmelone.glowingeyes.client.util.TextureLocations;
 import me.andreasmelone.glowingeyes.common.util.Color;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -12,7 +12,7 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -46,7 +46,7 @@ public class ColorSliderWidget extends AbstractWidget implements GuiEventListene
     }
 
     @Override
-    public void renderWidget(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float deltaTime) {
+    public void extractWidgetRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float deltaTime) {
         GuiUtil.drawHueBar(
                 ctx,
                 this.getX(), this.getY(),
@@ -85,14 +85,14 @@ public class ColorSliderWidget extends AbstractWidget implements GuiEventListene
         int keyCode = event.key();
         int modifiers = event.modifiers();
 
-        boolean isCtrlPressed = (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
+        boolean isCtrlPressed = (modifiers & InputConstants.MOD_CONTROL) != 0;
         float increment = INCREMENT * (isCtrlPressed ? INCREMENT_CTRL_PRESSED_FACTOR : INCREMENT_NORMAL_FACTOR);
-        if(keyCode == GLFW.GLFW_KEY_UP) {
+        if(keyCode == InputConstants.KEY_UP) {
             this.hue = ((this.hue + increment) % 1.0f + 1.0f) % 1.0f;
             this.triggerChange();
             return true;
         }
-        if(keyCode == GLFW.GLFW_KEY_DOWN) {
+        if(keyCode == InputConstants.KEY_DOWN) {
             this.hue = ((this.hue - increment) % 1.0f + 1.0f) % 1.0f;
             this.triggerChange();
             return true;

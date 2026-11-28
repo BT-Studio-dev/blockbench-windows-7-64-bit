@@ -8,7 +8,7 @@ import me.andreasmelone.glowingeyes.client.util.TextureLocations;
 import me.andreasmelone.glowingeyes.client.util.color.ColorType;
 import me.andreasmelone.glowingeyes.client.util.color.ColorUtil;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -130,7 +130,7 @@ public class ColorPickerScreen extends Screen {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float delta) {
+    public void extractRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         if(this.parent != null) {
             this.parent.render(ctx, 0, 0, delta);
             GuiUtil.drawTransparentBlack(ctx);
@@ -161,7 +161,7 @@ public class ColorPickerScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTick) {
     }
 
     private void changeColor(float hue, float saturation, float brightness) {

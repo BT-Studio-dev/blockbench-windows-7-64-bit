@@ -2,10 +2,9 @@ package me.andreasmelone.glowingeyes.client.gui;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.renderpearl.api.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.GpuTexture;
-import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.renderpearl.api.texture.GpuTexture;
 import com.mojang.logging.LogUtils;
 import me.andreasmelone.glowingeyes.client.component.eyes.ClientGlowingEyesComponent;
 import me.andreasmelone.glowingeyes.client.gui.button.TintedOverlayImageButton;
@@ -24,7 +23,7 @@ import me.andreasmelone.glowingeyes.common.util.Color;
 import me.andreasmelone.glowingeyes.common.util.Point;
 import me.andreasmelone.glowingeyes.mixin.client.GpuTextureAccessor;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -194,13 +193,13 @@ public class EyesEditorScreen extends Screen {
     /**
      * The method that renders the screen
      *
-     * @param ctx       The GuiGraphics object which contains all rendering functions and the current context
+     * @param ctx       The GuiGraphicsExtractor object which contains all rendering functions and the current context
      * @param mouseX    The x position of the mouse
      * @param mouseY    The y position of the mouse
      * @param deltaTime The time since the last frame
      */
     @Override
-    public void render(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float deltaTime) {
+    public void extractRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float deltaTime) {
         super.renderBackground(ctx, mouseX, mouseY, deltaTime);
 
         GuiUtil.drawBackground(ctx,
@@ -281,7 +280,7 @@ public class EyesEditorScreen extends Screen {
                     mouseX + COLOR_BOX_WIDTH / 2, mouseY + COLOR_BOX_HEIGHT / 2 + COLOR_BOX_OFFSET_Y,
                     color.getRGB()
             );
-            ctx.drawCenteredString(this.minecraft.font, text,
+            ctx.centeredText(this.minecraft.font, text,
                     mouseX, mouseY - COLOR_LABEL_OFFSET_Y, Color.WHITE.getRGB());
         }
         super.render(ctx, mouseX, mouseY, deltaTime);
@@ -323,7 +322,7 @@ public class EyesEditorScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTick) {
     }
 
     private Color getTexturePixelColor(Identifier texture, int texSizeX, int texSizeY, int x, int y) {
@@ -414,7 +413,7 @@ public class EyesEditorScreen extends Screen {
     }
 
     private Vector2f scalePoint(float x, float y) {
-        PoseStack pose = new PoseStack();
+        org.joml.Matrix3x2fStack pose = new org.joml.Matrix3x2fStack();
         pose.pushPose();
         pose.translate(
                 (this.width - (this.width * this.scale)) / 2f,

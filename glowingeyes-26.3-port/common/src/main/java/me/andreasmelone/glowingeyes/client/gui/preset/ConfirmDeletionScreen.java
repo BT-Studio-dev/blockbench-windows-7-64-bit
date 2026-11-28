@@ -4,7 +4,7 @@ import me.andreasmelone.glowingeyes.client.util.GuiUtil;
 import me.andreasmelone.glowingeyes.client.util.TextureLocations;
 import me.andreasmelone.glowingeyes.common.util.Color;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -86,7 +86,7 @@ public class ConfirmDeletionScreen extends Screen {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTicks) {
         if (this.parent != null) {
             this.parent.render(ctx, 0, 0, partialTicks);
             GuiUtil.drawTransparentBlack(ctx);
@@ -118,7 +118,7 @@ public class ConfirmDeletionScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float partialTick) {
+    public void extractBackground(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTick) {
     }
 
     public static CompletableFuture<Boolean> askToDelete(Screen parent, String element) {

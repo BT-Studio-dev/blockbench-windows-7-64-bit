@@ -1,9 +1,19 @@
 classTweaker v1    official
-# Header must be line 1: Loom validates it and the format is now
-# "classTweaker <version> <namespace>", not "accessWidener v2 ...". Namespace
-# is official because no-remap game jars ship unobfuscated.
+# Header must be line 1; the format is "classTweaker <version> <namespace>" and
+# the namespace is official because 26.x game jars ship unobfuscated.
 
+# Survives in 26.3 -- resource-pack reload still reports through this cookie.
 accessible  class   net/minecraft/client/Minecraft$GameLoadCookie
-accessible  method  net/minecraft/client/renderer/RenderPipelines   register    (Lcom/mojang/blaze3d/pipeline/RenderPipeline;)Lcom/mojang/blaze3d/pipeline/RenderPipeline;
-accessible  field   net/minecraft/client/renderer/RenderPipelines   GUI_TEXTURED_SNIPPET  Lcom/mojang/blaze3d/pipeline/RenderPipeline$Snippet;
-mutable field   com/mojang/blaze3d/textures/GpuTexture usage I
+
+# RenderPipelines#register still exists but is not public; custom pipelines
+# still have to be registered through it (see better-enchants 26.3 port).
+accessible  method  net/minecraft/client/renderer/RenderPipelines   register    (Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;)Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;
+
+# NOTE 1: GUI_TEXTURED_SNIPPET is deliberately NOT widened. 26.3 renamed every
+# pipeline constant to carry a _SNIPPET suffix, and the ones we need are public.
+# NOTE 2: the GpuTexture "usage" field is NOT widened. The GPU API moved to
+# com.mojang.renderpearl and the old field is gone; widening a field that does
+# not exist fails the class tweaker outright, which is what the compiler said:
+#   Could not find field (usage:I) ... / Could not find class GameLoadCookie
+# GameLoadCookie is kept because its absence was a separate line in the same
+# error and it is still referenced by MinecraftMixin.

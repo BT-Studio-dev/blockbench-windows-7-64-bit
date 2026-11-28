@@ -6,7 +6,7 @@ import me.andreasmelone.glowingeyes.client.util.SkinUtil;
 import me.andreasmelone.glowingeyes.client.util.TextureLocations;
 import me.andreasmelone.glowingeyes.common.util.Color;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
@@ -113,7 +113,7 @@ public class SkinPartSelectorScreen extends Screen {
     }
 
     @Override
-    public void render(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float partialTicks) {
+    public void extractRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTicks) {
         if (this.parent != null) {
             this.parent.render(ctx, 0, 0, partialTicks);
             GuiUtil.drawTransparentBlack(ctx);
@@ -124,7 +124,7 @@ public class SkinPartSelectorScreen extends Screen {
                 TEXTURE_WIDTH, TEXTURE_HEIGHT
         );
 
-        ctx.drawCenteredString(
+        ctx.centeredText(
                 this.minecraft.font,
                 Component.translatable("gui.glowingeyes.skinpartselection"),
                 this.middle, this.guiTop + 7,
@@ -228,7 +228,7 @@ public class SkinPartSelectorScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(@NotNull GuiGraphics ctx, int mouseX, int mouseY, float partialTicks) {
+    public void extractBackground(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTicks) {
     }
 
     @Override

@@ -7,7 +7,7 @@ import me.andreasmelone.glowingeyes.common.util.Util;
 import net.minecraft.client.KeyMapping;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
 import net.neoforged.neoforge.client.settings.KeyConflictContext;
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 public class GlowingEyesKeybindings {
     private static final KeyMapping.Category CATEGORY = new KeyMapping.Category(Util.id(GlowingEyes.MOD_ID, "keys"));
