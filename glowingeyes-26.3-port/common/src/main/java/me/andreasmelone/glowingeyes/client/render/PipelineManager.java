@@ -4,8 +4,8 @@ import com.mojang.renderpearl.api.pipeline.BlendFunction;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.renderpearl.api.pipeline.ColorTargetState;
 import com.mojang.renderpearl.api.pipeline.PrimitiveTopology;
-import com.mojang.renderpearl.api.pipeline.BindGroupLayouts;
-import com.mojang.renderpearl.api.vertex.DefaultVertexFormat;
+import net.minecraft.client.renderer.BindGroupLayouts;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.renderpearl.api.vertex.VertexFormat;
 import me.andreasmelone.glowingeyes.GlowingEyes;
 import me.andreasmelone.glowingeyes.common.util.Util;
@@ -24,6 +24,7 @@ public class PipelineManager {
             // the globals and projection transforms.
             .withBindGroupLayout(BindGroupLayouts.GLOBALS)
             .withBindGroupLayout(BindGroupLayouts.PROJECTION)
+            .withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
             .buildSnippet();
 
     public static final RenderPipeline.Snippet HUE_BAR_SNIPPET = RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
@@ -36,6 +37,7 @@ public class PipelineManager {
             // the globals and projection transforms.
             .withBindGroupLayout(BindGroupLayouts.GLOBALS)
             .withBindGroupLayout(BindGroupLayouts.PROJECTION)
+            .withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
             .buildSnippet();
 
     public static final RenderPipeline COLOR_SQUARE_SHADER =
