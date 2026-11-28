@@ -13,7 +13,12 @@ import path from 'node:path';
 import zlib from 'node:zlib';
 
 const root = path.resolve(import.meta.dirname, '..');
-const builds = path.join(root, 'fresh-moves-glasses', 'builds');
+// Accept a directory so CI can point this at dist-packs/ as well as the
+// checked-in builds/ -- they should agree, and checking an arbitrary output
+// directory is the only way to prove a build job produced the fix.
+const builds = process.argv[2]
+	? path.resolve(process.argv[2])
+	: path.join(root, 'fresh-moves-glasses', 'builds');
 
 // Right brows sit at z=0.05 inside a node translated -4.4; left at -0.35 inside
 // -4. Left and right are deliberately different -- they are not a typo.
