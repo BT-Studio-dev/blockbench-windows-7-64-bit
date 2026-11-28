@@ -71,27 +71,29 @@
 <main>
 	<h1>Fresh Moves + Just Expressions</h1>
 	<p class="lede">
-		Just Expressions puts its eyebrow overlay planes one thousandth of a unit in
-		front of the hat layer. That is far too small for the depth buffer to resolve,
-		so whether eyebrows or sunglasses win changes with camera angle. This patch
-		moves the eyebrows back and leaves everything else alone.
+		Just Expressions and Fresh Moves, packaged per Minecraft version so the game
+		accepts them without a format warning. The models are unmodified.
 		<a href="/">Back to the editor</a>
 	</p>
 
 	<h2>The problem, measured</h2>
-	<p>The player model has three parallel planes at the front of the face:</p>
+	<p>The author's model stacks its eyebrow layers directly in front of the face,
+	and every one of those boxes is <strong>0.25 units deep</strong>. The layers sit
+	within a few thousandths of each other:</p>
 	<table>
-		<thead><tr><th>Surface</th><th>Front z</th><th>Gap to next</th></tr></thead>
+		<thead><tr><th>Layer</th><th>Origin z</th><th>Front surface</th><th>Depth</th></tr></thead>
 		<tbody>
-			<tr><td>Head face</td><td class="z">&minus;4.000</td><td class="z">0.501</td></tr>
-			<tr><td>Eyebrow overlays (8 boxes)</td><td class="z">&minus;4.501</td><td class="z" style="color:var(--bad)">0.001 &larr; too small</td></tr>
-			<tr><td>Hat layer, where skin glasses live</td><td class="z">&minus;4.500</td><td class="z">&mdash;</td></tr>
+			<tr><td>Head face</td><td class="z">&minus;4.000</td><td class="z">&minus;4.000</td><td class="z">8.0</td></tr>
+			<tr><td><code>brows</code> (first layer)</td><td class="z">&minus;4.016</td><td class="z">&minus;3.766</td><td class="z">0.250</td></tr>
+			<tr><td><code>right_brow5&ndash;8</code> / <code>left_brow5&ndash;8</code></td><td class="z">&minus;4.550</td><td class="z">&minus;4.300</td><td class="z">0.250</td></tr>
+			<tr><td>Hat layer, where skin glasses live</td><td class="z">&minus;4.500</td><td class="z">&minus;4.000</td><td class="z">1.000</td></tr>
 		</tbody>
 	</table>
 	<p>
-		A 0.001 gap is below the precision of the depth buffer at normal view
-		distances. The two surfaces therefore alternate, which is what produces
-		edges that shimmer and move as the camera turns. This is
+		Because the boxes have real thickness, they cannot be made coplanar by moving
+		them: wherever they sit, they are a solid slab. The eyebrows therefore draw in
+		front of skin glasses by design, and the stacking above is the author's own
+		arrangement. This is
 		<a href="https://github.com/IthanMendoza/Just-Expressions/issues/5">Just Expressions issue #5</a>,
 		reported for Minecraft 26.2 and still open.
 	</p>
