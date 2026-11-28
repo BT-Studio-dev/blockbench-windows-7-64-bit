@@ -132,7 +132,7 @@ public class ColorPickerScreen extends Screen {
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float delta) {
         if(this.parent != null) {
-            this.parent.render(ctx, 0, 0, delta);
+            this.parent.extractRenderState(ctx, 0, 0, delta);
             GuiUtil.drawTransparentBlack(ctx);
         } else super.extractBackground(ctx, mouseX, mouseY, delta);
         GuiUtil.drawBackground(ctx,
@@ -145,7 +145,7 @@ public class ColorPickerScreen extends Screen {
                 this.mod.getModVariables().getFinalColor().getRGB()
         );
 
-        super.render(ctx, mouseX, mouseY, delta);
+        super.extractRenderState(ctx, mouseX, mouseY, delta);
     }
 
     @Override

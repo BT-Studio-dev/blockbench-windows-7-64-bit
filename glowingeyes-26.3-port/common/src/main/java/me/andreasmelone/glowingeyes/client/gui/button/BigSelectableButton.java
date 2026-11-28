@@ -42,7 +42,7 @@ public class BigSelectableButton extends Button {
 
 //            Color color = new Color(this.active ? ACTIVE_COLOR : NOT_ACTIVE_COLOR);
 //            this.renderString(ctx, mc.font, color.withAlpha(this.alpha).getRGB());
-            this.renderDefaultLabel(ctx.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
+            this.extractDefaultLabel(ctx.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
         }
     }
 

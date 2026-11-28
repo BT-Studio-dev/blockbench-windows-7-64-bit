@@ -278,7 +278,7 @@ public class EyesEditorScreen extends Screen {
             ctx.centeredText(this.minecraft.font, text,
                     mouseX, mouseY - COLOR_LABEL_OFFSET_Y, Color.WHITE.getRGB());
         }
-        super.render(ctx, mouseX, mouseY, deltaTime);
+        super.extractRenderState(ctx, mouseX, mouseY, deltaTime);
     }
 
     @Override

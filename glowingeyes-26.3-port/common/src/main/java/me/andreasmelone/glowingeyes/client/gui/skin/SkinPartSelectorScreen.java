@@ -115,7 +115,7 @@ public class SkinPartSelectorScreen extends Screen {
     @Override
     public void extractRenderState(@NotNull GuiGraphicsExtractor ctx, int mouseX, int mouseY, float partialTicks) {
         if (this.parent != null) {
-            this.parent.render(ctx, 0, 0, partialTicks);
+            this.parent.extractRenderState(ctx, 0, 0, partialTicks);
             GuiUtil.drawTransparentBlack(ctx);
         } else super.extractBackground(ctx, mouseX, mouseY, partialTicks);
         GuiUtil.drawBackground(
@@ -209,7 +209,7 @@ public class SkinPartSelectorScreen extends Screen {
             }
         }
 
-        super.render(ctx, mouseX, mouseY, partialTicks);
+        super.extractRenderState(ctx, mouseX, mouseY, partialTicks);
     }
 
     @Override

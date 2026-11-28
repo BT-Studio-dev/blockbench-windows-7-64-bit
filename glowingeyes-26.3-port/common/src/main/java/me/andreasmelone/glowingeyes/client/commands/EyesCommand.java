@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import com.mojang.logging.LogUtils;
@@ -87,7 +86,10 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
             obj.addProperty("iris_present", IrisUtils.IS_IRIS_PRESENT);
 
             obj.addProperty("cpu", System.getProperty("os.arch", "unknown"));
-            obj.addProperty("gpu", RenderSystem.getDevice().getRenderer());
+            // PORT NOTE (26.3): GpuDevice has no getRenderer() after the renderpearl
+            // split. Reporting the GL renderer string would need a GL call that
+            // is not reachable from here, so the field is kept and labelled.
+            obj.addProperty("gpu", "unavailable in this build (renderpearl)");
 
             JsonArray mods = new JsonArray();
             for (int i = 0; i < LoaderUtils.LOADED_MODS.length; i++) {
