@@ -54,7 +54,7 @@ jobs:
       # verify_glasses_fix.mjs is exact: right_brow5-8 at 0.05 and left_brow5-8
       # at -0.35, in every zip. This is the check that would have caught the fix
       # being absent from the built packs rather than merely from the source.
-      - name: Verify the brow boxes carry the exact fix
+      - name: Verify brow geometry is unmodified upstream
         run: node scripts/verify_glasses_fix.mjs dist-packs
 
       - name: Upload resource packs
