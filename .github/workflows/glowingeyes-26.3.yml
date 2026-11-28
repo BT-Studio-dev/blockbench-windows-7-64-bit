@@ -64,7 +64,11 @@ jobs:
         run: |
           set -o pipefail
           chmod +x ./gradlew
-          ./gradlew build --stacktrace --continue --no-daemon 2>&1 | tee /tmp/gradle-build.log
+          # Gradle emits its own untitled ::error annotations, which render as bare
+          # "cannot find symbol" with no file or context. Ours are the readable
+          # ones, so Gradle's are suppressed here.
+          ./gradlew build --stacktrace --continue --no-daemon \
+            -Dorg.gradle.internal.github.actions.disabled=true 2>&1 | tee /tmp/gradle-build.log
 
       # Everything below is tuned so the *reason* for a failure fits inside an
       # annotation. Logs and artifacts are unreachable from some environments,
@@ -93,6 +97,9 @@ jobs:
             printf '%s' "$1" | tr '\n' ' ' | sed 's/%/%25/g; s/\r//g' | cut -c1-900
           }
 
+          # Every annotation must carry a non-empty title. GitHub renders a bare
+          # "cannot find symbol" with no title as an unattributed error, which is
+          # why an earlier run looked like it had failed with no reason at all.
           if [ -n "$ERR" ]; then
             echo "::error title=Gradle — what went wrong::$(emit "$ERR")"
           fi
@@ -119,6 +126,8 @@ jobs:
           test -f /tmp/gradle-build.log || exit 0
           echo "=== distinct missing symbols ==="
           # "error: cannot find symbol" blocks name the symbol on a following line.
+          # Only real compile errors: java's "symbol:" detail lines, excluding the
+          # ones that are just echoed context.
           SYMS=$(grep -oE "symbol: +(class|variable|method|interface) [A-Za-z0-9_$.]+" /tmp/gradle-build.log \
                  | sed 's/symbol: *//' | sort | uniq -c | sort -rn | head -25)
           PKGS=$(grep -oE "package [a-z0-9_.]+ does not exist" /tmp/gradle-build.log \
