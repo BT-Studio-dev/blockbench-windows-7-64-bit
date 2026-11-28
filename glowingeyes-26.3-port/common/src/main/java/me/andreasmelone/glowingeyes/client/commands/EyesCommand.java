@@ -161,11 +161,11 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
             Component clickableComponent = Component.literal(dumpFile.getName())
                     .withStyle(ChatFormatting.UNDERLINE)
                     .withStyle((style) -> style.withClickEvent(new ClickEvent.OpenFile(dumpFile.getAbsolutePath())));
-            mc.player.sendOverlayMessage(Component.literal("Successfully dumped eyes to ").append(clickableComponent), false);
+            mc.player.sendOverlayMessage(Component.literal("Successfully dumped eyes to ").append(clickableComponent));
         } catch (IOException e) {
             LogUtils.getLogger().error("Unable to dump", e);
             mc.player.sendOverlayMessage(
-                    Component.literal("Failed to dump! Try again or report to the mod author.").withStyle(ChatFormatting.RED), false);
+                    Component.literal("Failed to dump! Try again or report to the mod author.").withStyle(ChatFormatting.RED));
         }
 
         return 1;
@@ -181,16 +181,16 @@ public class EyesCommand<T extends SharedSuggestionProvider> extends AbstractCli
 
         player.sendOverlayMessage(Component.literal("Selected color: ")
                 .append(Component.literal(ColorType.HEX.get(selectedColor)))
-                .withStyle(Style.EMPTY.withColor(selectedColor.getRGB())), false);
+                .withStyle(Style.EMPTY.withColor(selectedColor.getRGB())));
         player.sendOverlayMessage(Component.literal("Brightness: ")
-                .append(String.format("%.2f", brightness)), false);
+                .append(String.format("%.2f", brightness)));
         player.sendOverlayMessage(Component.literal("Final color: ")
                 .append(Component.literal(ColorType.HEX.get(finalColor)))
-                .withStyle(Style.EMPTY.withColor(finalColor.getRGB())), false);
+                .withStyle(Style.EMPTY.withColor(finalColor.getRGB())));
         player.sendOverlayMessage(Component.literal("Toggled ")
-                .append(toggledOn ? "ON" : "OFF"), false);
+                .append(toggledOn ? "ON" : "OFF"));
         player.sendOverlayMessage(Component.literal("Layout: ")
-                .append(GlowingEyesComponent.getGlowingEyesMap(player).toString()), false);
+                .append(GlowingEyesComponent.getGlowingEyesMap(player).toString()));
 
         return 1;
     }

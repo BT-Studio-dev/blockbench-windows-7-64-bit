@@ -203,8 +203,7 @@ public class SkinPartSelectorScreen extends Screen {
                         this.minecraft.font,
                         tooltipList,
                         (int) cursorX, (int) cursorY,
-                        DefaultTooltipPositioner.INSTANCE,
-                        null
+                        DefaultTooltipPositioner.INSTANCE
                 );
             }
         }

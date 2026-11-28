@@ -256,7 +256,7 @@ public class PresetsScreen extends Screen {
                 64, 64
         );
 
-        InventoryScreen.renderEntityInInventoryFollowsMouse(
+        InventoryScreen.extractEntityInInventoryFollowsMouse(
                 ctx,
                 playerBoxX,                            // x1
                 playerBoxY,                            // y1
