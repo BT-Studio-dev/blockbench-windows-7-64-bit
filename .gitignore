@@ -1,0 +1,19 @@
+/dist/
+/dist-electron/
+/docs/
+/types/generated/
+.env
+.DS_store
+electron-builder.env
+node_modules/
+workbox-*.js
+service_worker.js
+
+# Arena agent scratch space (screenshots, local verification harnesses)
+.arena/
+
+# Deployment output and generated site data (see scripts/vercel_build.mjs)
+/public/
+/target/
+/build-info.json
+/publisher/site.js

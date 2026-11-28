@@ -1,0 +1,25 @@
+[package]
+name = "blockbench-web7"
+version = "0.1.0"
+edition = "2021"
+# Vercel's Rust runtime builds this crate in its own image, so state the
+# toolchain floor here instead of relying on an image default.
+rust-version = "1.85"
+description = "Serves the Blockbench web build and its API from Vercel Functions"
+license = "MIT"
+publish = false
+
+# Only what the handler actually uses. Keeping the dependency list short keeps
+# the compiled function small and the set of things that must resolve together
+# predictable: vercel_runtime already brings hyper, http, http-body and tokio.
+[dependencies]
+vercel_runtime = "2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+
+# Release settings from the Vercel Rust docs: one codegen unit and fat LTO trade
+# build time for a smaller, faster binary.
+[profile.release]
+codegen-units = 1
+lto = "fat"
+opt-level = 3
+strip = true

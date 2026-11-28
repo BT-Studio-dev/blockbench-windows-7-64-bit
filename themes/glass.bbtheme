@@ -1,0 +1,66 @@
+/*
+id: glass
+name: Glass
+author: Blockbench Windows 7 build
+version: 1.0.0
+borders: true
+*/
+body {
+	--color-ui: rgba(38, 43, 54, 0.72);
+	--color-back: rgba(22, 26, 34, 0.62);
+	--color-dark: rgba(12, 15, 20, 0.55);
+	--color-border: rgba(255, 255, 255, 0.09);
+	--color-selected: rgba(62, 144, 255, 0.26);
+	--color-elevated: rgba(48, 54, 66, 0.78);
+	--color-button: rgba(255, 255, 255, 0.07);
+	--color-bright_ui: #f4f3ff;
+	--color-accent: #4da6ff;
+	--color-frame: rgba(255, 255, 255, 0.14);
+	--color-text: #e2e6ef;
+	--color-light: #ffffff;
+	--color-accent_text: #04121f;
+	--color-bright_ui_text: #04121f;
+	--color-subtle_text: #9aa3b2;
+	--color-grid: rgba(255, 255, 255, 0.12);
+	--color-wireframe: #7fa8c4;
+	--color-checkerboard: rgba(255, 255, 255, 0.03);
+}
+
+/*
+ * Glass leans on translucency, which only reads as glass when something is
+ * behind it. The gradients below give the window a backdrop to show through
+ * instead of flat panels, and a blur softens the edges the way a real pane
+ * would. `backdrop-filter` is Chromium-only here, which is exactly what this
+ * build targets, and it degrades to a plain translucent panel where unsupported.
+ */
+body {
+	background-image:
+		radial-gradient(circle at 18% 12%, rgba(77, 166, 255, 0.20), transparent 42%),
+		radial-gradient(circle at 82% 88%, rgba(150, 96, 255, 0.16), transparent 46%),
+		radial-gradient(circle at 65% 25%, rgba(0, 214, 170, 0.10), transparent 38%),
+		linear-gradient(160deg, #10141b 0%, #0b0e13 100%);
+	background-attachment: fixed;
+}
+
+#page_wrapper,
+.dialog,
+#quick_setup,
+#start_screen .start_screen_content {
+	backdrop-filter: blur(18px) saturate(140%);
+	-webkit-backdrop-filter: blur(18px) saturate(140%);
+}
+
+.dialog,
+#quick_setup,
+#settings_dialog,
+#theme_dialog {
+	box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+}
+
+.toolbar,
+#header_bar,
+#status_bar,
+.panel,
+.side_bar {
+	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}

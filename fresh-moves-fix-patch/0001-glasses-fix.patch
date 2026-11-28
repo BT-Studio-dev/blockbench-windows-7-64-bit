@@ -1,0 +1,450 @@
+From 70c326ab32babb21c6acbc499481bb8e82e8bae5 Mon Sep 17 00:00:00 2001
+From: arena-agent <agent@arena.ai>
+Date: Fri, 27 Nov 2026 22:59:07 +0000
+Subject: [PATCH] Stop the 2nd-layer eyebrows drawing over skin glasses
+
+The eight 2nd-layer eyebrow variants sat at z -4.550, which is 0.05 in
+front of the hat layer at -4.500. A player's sunglasses are drawn on the
+hat layer, so those eyebrows rendered over the lens, and because the gap
+was only 0.05 the two surfaces also swapped depth as the camera turned.
+That is the flicker people report as glasses glitching.
+
+They now sit at -4.350: 0.15 behind the hat layer and 0.35 in front of
+the face. An opaque lens hides them; a transparent one still lets them
+through, so skins using the 2nd layer for other things keep working.
+
+The hat layer is not touched. It stays at -4.500 with size 9, because
+that layer holds the glasses and moving it would hide or scale them.
+
+Both player models are patched, and both their base and v1_21_2 copies,
+so the version that loads on 1.21.2 and newer carries the fix as well.
+
+build.py now checks this. It fails if any eyebrow box is at or in front
+of the hat plane, or if the hat layer leaves -4.500, across assets/ and
+every overlay folder. Run against the previous model it fails on
+right_brow5 at -4.550, so the check is known to bite.
+
+Adds docs/Fix-Glasses-Over-Eyebrows.md, which the site picks up as a
+guide automatically, and a line in the README changelog.
+---
+ README.md                                     |  1 +
+ assets/minecraft/optifine/cem/player.jem      | 16 +++----
+ assets/minecraft/optifine/cem/player_slim.jem | 16 +++----
+ build.py                                      | 43 +++++++++++++++++++
+ docs/Fix-Glasses-Over-Eyebrows.md             | 25 +++++++++++
+ .../assets/minecraft/optifine/cem/player.jem  | 16 +++----
+ .../minecraft/optifine/cem/player_slim.jem    | 16 +++----
+ 7 files changed, 101 insertions(+), 32 deletions(-)
+ create mode 100644 docs/Fix-Glasses-Over-Eyebrows.md
+
+diff --git a/README.md b/README.md
+index 5d2693e..7a24776 100644
+--- a/README.md
++++ b/README.md
+@@ -86,6 +86,7 @@ Try the separate [Minecraft Animation maker](https://fresh-moves-fix.vercel.app/
+ - Wave emote (new in 3.1-fix2): stand still, sneak and look straight up, and the right arm waves. Other players with the pack see it too.
+ - Added example skins `herobrine.png` and `alex_white_eyes.png`.
+ - Wiki pages copied to `docs/`; caption fixed in "Eyebrow (Villager)" (upstream issue #246).
++- **Glasses fix:** the 2nd-layer eyebrow variants (`right_brow5`–`8`, `left_brow5`–`8`) sat at z −4.550, which is 0.05 **in front of** the hat layer at −4.500. A player's sunglasses live on the hat layer, so those eyebrows drew over the lens and the two surfaces fought for the same depth as the camera turned, which showed as edges flickering on and off. They now sit at −4.350: behind the hat, in front of the face. An opaque lens hides them; a transparent one still lets them through. `build.py` now fails if any eyebrow box is at or in front of the hat plane, or if the hat layer itself moves.
+ 
+ None of the model changes have been tested in-game yet.
+ 
+diff --git a/assets/minecraft/optifine/cem/player.jem b/assets/minecraft/optifine/cem/player.jem
+index 6ad99a8..b32dcb3 100644
+--- a/assets/minecraft/optifine/cem/player.jem
++++ b/assets/minecraft/optifine/cem/player.jem
+@@ -302,7 +302,7 @@
+ 							"translate": [2, 26.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 7, 58, 8],
+ 									"uvEast": [56, 7, 57, 8],
+ 									"uvSouth": [58, 7, 56, 8],
+@@ -318,7 +318,7 @@
+ 							"translate": [-2, 26.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 7, 60, 8],
+ 									"uvEast": [58, 7, 59, 8],
+ 									"uvSouth": [60, 7, 58, 8],
+@@ -334,7 +334,7 @@
+ 							"translate": [2, 27.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 6, 58, 7],
+ 									"uvEast": [56, 6, 57, 7],
+ 									"uvSouth": [58, 6, 56, 7],
+@@ -350,7 +350,7 @@
+ 							"translate": [-2, 27.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 6, 60, 7],
+ 									"uvEast": [58, 6, 59, 7],
+ 									"uvSouth": [60, 6, 58, 7],
+@@ -366,7 +366,7 @@
+ 							"translate": [2, 28.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 5, 58, 6],
+ 									"uvEast": [56, 5, 57, 6],
+ 									"uvSouth": [58, 5, 56, 6],
+@@ -382,7 +382,7 @@
+ 							"translate": [-2, 28.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 5, 60, 6],
+ 									"uvEast": [58, 5, 59, 6],
+ 									"uvSouth": [60, 5, 58, 6],
+@@ -398,7 +398,7 @@
+ 							"translate": [2, 29.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 4, 58, 5],
+ 									"uvEast": [56, 4, 57, 5],
+ 									"uvSouth": [58, 4, 56, 5],
+@@ -414,7 +414,7 @@
+ 							"translate": [-2, 29.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 4, 60, 5],
+ 									"uvEast": [58, 4, 59, 5],
+ 									"uvSouth": [60, 4, 58, 5],
+diff --git a/assets/minecraft/optifine/cem/player_slim.jem b/assets/minecraft/optifine/cem/player_slim.jem
+index f7e9cc1..258c362 100644
+--- a/assets/minecraft/optifine/cem/player_slim.jem
++++ b/assets/minecraft/optifine/cem/player_slim.jem
+@@ -302,7 +302,7 @@
+ 							"translate": [2, 26.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 7, 58, 8],
+ 									"uvEast": [56, 7, 57, 8],
+ 									"uvSouth": [58, 7, 56, 8],
+@@ -318,7 +318,7 @@
+ 							"translate": [-2, 26.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 7, 60, 8],
+ 									"uvEast": [58, 7, 59, 8],
+ 									"uvSouth": [60, 7, 58, 8],
+@@ -334,7 +334,7 @@
+ 							"translate": [2, 27.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 6, 58, 7],
+ 									"uvEast": [56, 6, 57, 7],
+ 									"uvSouth": [58, 6, 56, 7],
+@@ -350,7 +350,7 @@
+ 							"translate": [-2, 27.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 6, 60, 7],
+ 									"uvEast": [58, 6, 59, 7],
+ 									"uvSouth": [60, 6, 58, 7],
+@@ -366,7 +366,7 @@
+ 							"translate": [2, 28.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 5, 58, 6],
+ 									"uvEast": [56, 5, 57, 6],
+ 									"uvSouth": [58, 5, 56, 6],
+@@ -382,7 +382,7 @@
+ 							"translate": [-2, 28.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 5, 60, 6],
+ 									"uvEast": [58, 5, 59, 6],
+ 									"uvSouth": [60, 5, 58, 6],
+@@ -398,7 +398,7 @@
+ 							"translate": [2, 29.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 4, 58, 5],
+ 									"uvEast": [56, 4, 57, 5],
+ 									"uvSouth": [58, 4, 56, 5],
+@@ -414,7 +414,7 @@
+ 							"translate": [-2, 29.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 4, 60, 5],
+ 									"uvEast": [58, 4, 59, 5],
+ 									"uvSouth": [60, 4, 58, 5],
+diff --git a/build.py b/build.py
+index c5f16e8..f5adbb1 100644
+--- a/build.py
++++ b/build.py
+@@ -21,6 +21,47 @@ def fail(msg):
+     sys.exit(1)
+ 
+ 
++# The hat layer is where a player's skin glasses live. The 2nd-layer eyebrow
++# variants must sit *behind* the hat plane, or they draw over the lens and the
++# two surfaces fight for the same depth as the camera turns. This was true of
++# right_brow5..8 and left_brow5..8, which sat at -4.550, 0.05 in front of the
++# hat at -4.500.
++HAT_PLANE = -4.5
++
++
++def check_head_layers(path):
++    """Fail if any eyebrow box sits at or in front of the hat layer plane."""
++    import glob
++    data = json.loads(path.read_text(encoding="utf-8"))
++    for model in data.get("models", []):
++        if model.get("id") not in ("head", "headwear"):
++            continue
++        if model.get("id") == "headwear":
++            for box in model.get("boxes", []):
++                front = box["coordinates"][2] - (box.get("sizeAdd", 0) or 0)
++                if abs(front - HAT_PLANE) > 0.001:
++                    fail(f"{path.relative_to(ROOT)}: hat layer moved to {front}, must stay at {HAT_PLANE}")
++            continue
++
++        def walk(node, offset_z):
++            translate = node.get("translate") or [0, 0, 0]
++            z0 = offset_z + translate[2]
++            name = node.get("id") or ""
++            if "brow" in name.lower():
++                for box in node.get("boxes", []):
++                    front = box["coordinates"][2] + z0 - (box.get("sizeAdd", 0) or 0)
++                    if front <= HAT_PLANE:
++                        fail(
++                            f"{path.relative_to(ROOT)}: {name} at {front:.3f} sits in front of "
++                            f"the hat layer {HAT_PLANE} and will draw over skin glasses"
++                        )
++            for sub in node.get("submodels") or []:
++                if isinstance(sub, dict):
++                    walk(sub, z0)
++
++        walk(model, 0)
++
++
+ def check():
+     meta_path = ROOT / "pack.mcmeta"
+     if not meta_path.is_file():
+@@ -57,6 +98,8 @@ def check():
+                     json.loads(f.read_text(encoding="utf-8"))
+                 except ValueError as e:
+                     fail(f"{f.relative_to(ROOT)} is not valid JSON: {e}")
++                if f.suffix == ".jem" and f.name.startswith("player"):
++                    check_head_layers(f)
+                 count += 1
+     print(f"Checked {count} JSON files, {len(overlays)} overlay(s)")
+     return folders
+diff --git a/docs/Fix-Glasses-Over-Eyebrows.md b/docs/Fix-Glasses-Over-Eyebrows.md
+new file mode 100644
+index 0000000..6dee30a
+--- /dev/null
++++ b/docs/Fix-Glasses-Over-Eyebrows.md
+@@ -0,0 +1,25 @@
++Some skins draw sunglasses on the **second skin layer** — the hat part. When the pack's 2nd-layer eyebrows sat in front of that layer, the eyebrows drew over the lens, and the eyebrows and the lens competed for the same depth as the camera moved. The result was edges that flickered on and off depending on the angle.
++
++## What was wrong
++
++The player model has three planes at the front of the head:
++
++| Surface | Before | After |
++| --- | --- | --- |
++| Head face | −4.000 | −4.000 |
++| 2nd-layer eyebrows | **−4.550** | **−4.350** |
++| Hat layer (your glasses) | −4.500 | −4.500 |
++
++At −4.550 the eyebrows were 0.05 in front of the hat layer. That is far enough to always win, which is why the eyebrows showed through the lens, and close enough that the two surfaces could swap as the camera turned.
++
++## What changed
++
++The eight 2nd-layer eyebrow boxes moved to −4.350, which is 0.15 behind the hat layer and 0.35 in front of the face. An opaque sunglass lens now hides them. A transparent one still lets them show through, so skins that use the 2nd layer for other things keep working.
++
++The hat layer itself is untouched. It stays at −4.500 with a size of 9, exactly as vanilla, because that layer is your glasses: moving it would hide or scale them.
++
++## Checking it
++
++`python3 build.py` fails with a clear message if any eyebrow box is at or in front of the hat plane, or if the hat layer leaves −4.500. That check runs over `assets/` and every overlay folder, so the copy that loads on 1.21.2 and newer is covered too.
++
++This is the same class of fault reported against Just Expressions as [issue #5](https://github.com/IthanMendoza/Just-Expressions/issues/5), where its face overlays sit one thousandth of a unit in front of the same plane.
+diff --git a/v1_21_2/assets/minecraft/optifine/cem/player.jem b/v1_21_2/assets/minecraft/optifine/cem/player.jem
+index 7ce388a..4b1ff25 100644
+--- a/v1_21_2/assets/minecraft/optifine/cem/player.jem
++++ b/v1_21_2/assets/minecraft/optifine/cem/player.jem
+@@ -302,7 +302,7 @@
+ 							"translate": [2, 26.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 7, 58, 8],
+ 									"uvEast": [56, 7, 57, 8],
+ 									"uvSouth": [58, 7, 56, 8],
+@@ -318,7 +318,7 @@
+ 							"translate": [-2, 26.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 7, 60, 8],
+ 									"uvEast": [58, 7, 59, 8],
+ 									"uvSouth": [60, 7, 58, 8],
+@@ -334,7 +334,7 @@
+ 							"translate": [2, 27.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 6, 58, 7],
+ 									"uvEast": [56, 6, 57, 7],
+ 									"uvSouth": [58, 6, 56, 7],
+@@ -350,7 +350,7 @@
+ 							"translate": [-2, 27.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 6, 60, 7],
+ 									"uvEast": [58, 6, 59, 7],
+ 									"uvSouth": [60, 6, 58, 7],
+@@ -366,7 +366,7 @@
+ 							"translate": [2, 28.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 5, 58, 6],
+ 									"uvEast": [56, 5, 57, 6],
+ 									"uvSouth": [58, 5, 56, 6],
+@@ -382,7 +382,7 @@
+ 							"translate": [-2, 28.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 5, 60, 6],
+ 									"uvEast": [58, 5, 59, 6],
+ 									"uvSouth": [60, 5, 58, 6],
+@@ -398,7 +398,7 @@
+ 							"translate": [2, 29.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 4, 58, 5],
+ 									"uvEast": [56, 4, 57, 5],
+ 									"uvSouth": [58, 4, 56, 5],
+@@ -414,7 +414,7 @@
+ 							"translate": [-2, 29.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 4, 60, 5],
+ 									"uvEast": [58, 4, 59, 5],
+ 									"uvSouth": [60, 4, 58, 5],
+diff --git a/v1_21_2/assets/minecraft/optifine/cem/player_slim.jem b/v1_21_2/assets/minecraft/optifine/cem/player_slim.jem
+index 431d4af..78365fb 100644
+--- a/v1_21_2/assets/minecraft/optifine/cem/player_slim.jem
++++ b/v1_21_2/assets/minecraft/optifine/cem/player_slim.jem
+@@ -302,7 +302,7 @@
+ 							"translate": [2, 26.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 7, 58, 8],
+ 									"uvEast": [56, 7, 57, 8],
+ 									"uvSouth": [58, 7, 56, 8],
+@@ -318,7 +318,7 @@
+ 							"translate": [-2, 26.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 7, 60, 8],
+ 									"uvEast": [58, 7, 59, 8],
+ 									"uvSouth": [60, 7, 58, 8],
+@@ -334,7 +334,7 @@
+ 							"translate": [2, 27.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 6, 58, 7],
+ 									"uvEast": [56, 6, 57, 7],
+ 									"uvSouth": [58, 6, 56, 7],
+@@ -350,7 +350,7 @@
+ 							"translate": [-2, 27.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 6, 60, 7],
+ 									"uvEast": [58, 6, 59, 7],
+ 									"uvSouth": [60, 6, 58, 7],
+@@ -366,7 +366,7 @@
+ 							"translate": [2, 28.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 5, 58, 6],
+ 									"uvEast": [56, 5, 57, 6],
+ 									"uvSouth": [58, 5, 56, 6],
+@@ -382,7 +382,7 @@
+ 							"translate": [-2, 28.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 5, 60, 6],
+ 									"uvEast": [58, 5, 59, 6],
+ 									"uvSouth": [60, 5, 58, 6],
+@@ -398,7 +398,7 @@
+ 							"translate": [2, 29.5, -4.4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.15, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, 0.05, 2, 1, 0.25],
+ 									"uvNorth": [56, 4, 58, 5],
+ 									"uvEast": [56, 4, 57, 5],
+ 									"uvSouth": [58, 4, 56, 5],
+@@ -414,7 +414,7 @@
+ 							"translate": [-2, 29.5, -4],
+ 							"boxes": [
+ 								{
+-									"coordinates": [-1, -0.5, -0.55, 2, 1, 0.25],
++									"coordinates": [-1, -0.5, -0.35, 2, 1, 0.25],
+ 									"uvNorth": [58, 4, 60, 5],
+ 									"uvEast": [58, 4, 59, 5],
+ 									"uvSouth": [60, 4, 58, 5],
+-- 
+2.39.5
+

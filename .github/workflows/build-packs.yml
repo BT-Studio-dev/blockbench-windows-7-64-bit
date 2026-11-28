@@ -1,0 +1,65 @@
+name: Build resource packs
+
+# Builds the Just Expressions + Fresh Moves glasses fix for every Minecraft
+# Java version and uploads the zips.
+#
+# REVISION NOTE: this used to carry `if: contains(head_commit.message,
+# 'ci-build')`, copied from the installer workflows. That was wrong here. A
+# commit that edits pack-source but does not happen to say "ci-build" -- which
+# includes the very commit that applied the glasses fix -- triggered the
+# workflow and then skipped it, so the fix shipped unbuilt and unreported. The
+# path filter is already the correct gate; the extra condition only hid work.
+on:
+  push:
+    branches:
+      - "**"
+    paths:
+      - "fresh-moves-glasses/pack-source/**"
+      - "fresh-moves-glasses/builds/**"
+      - "scripts/build_packs.mjs"
+      - "scripts/verify_packs.mjs"
+      - "scripts/verify_glasses_fix.mjs"
+      - ".github/workflows/build-packs.yml"
+  pull_request:
+    paths:
+      - "fresh-moves-glasses/pack-source/**"
+      - "scripts/build_packs.mjs"
+      - "scripts/verify_packs.mjs"
+      - "scripts/verify_glasses_fix.mjs"
+  workflow_dispatch:
+
+jobs:
+  build-packs:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Build packs for every version
+        run: node scripts/build_packs.mjs dist-packs
+
+      # Two checks, deliberately different.
+      #
+      # verify_packs.mjs is structural: the hat layer must still be vanilla and
+      # the brows must be somewhere between the face plane and the hat plane. It
+      # guards against the original mistake, which was inflating the hat layer.
+      - name: Verify structure (hat layer untouched, brows in range)
+        run: node scripts/verify_packs.mjs dist-packs
+
+      # verify_glasses_fix.mjs is exact: right_brow5-8 at 0.05 and left_brow5-8
+      # at -0.35, in every zip. This is the check that would have caught the fix
+      # being absent from the built packs rather than merely from the source.
+      - name: Verify brow geometry is unmodified upstream
+        run: node scripts/verify_glasses_fix.mjs dist-packs
+
+      - name: Upload resource packs
+        uses: actions/upload-artifact@v4
+        with:
+          name: just-expressions-fresh-moves-glasses
+          path: dist-packs/*.zip
+          if-no-files-found: error

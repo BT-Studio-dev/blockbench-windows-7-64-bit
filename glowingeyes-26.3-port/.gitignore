@@ -1,0 +1,6 @@
+# Gradle output from a local build; CI re-produces it.
+build/
+.gradle/
+runs/
+*.jar
+!gradle/wrapper/gradle-wrapper.jar

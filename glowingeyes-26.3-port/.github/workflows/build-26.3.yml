@@ -1,0 +1,62 @@
+# Self-contained build for the 26.x branch.
+#
+# The shared build-j21.yml pins JDK 21, but Minecraft 26.x requires Java 25,
+# so this branch cannot use it. Keeping the 26.x build here also means the
+# Java 21 branches stay untouched.
+name: Build GlowingEyes for 26.3
+
+on:
+  push:
+    branches: [ "26.3", "26.3-dev" ]
+  pull_request:
+    branches: [ "26.3", "26.3-dev" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build with Gradle Wrapper
+        run: |
+          chmod +x ./gradlew
+          ./gradlew build --stacktrace
+
+      - name: Upload Fabric artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlowingEyes-Fabric-26.3
+          path: fabric/build/libs/*.jar
+          if-no-files-found: warn
+
+      - name: Upload NeoForge artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: GlowingEyes-NeoForge-26.3
+          path: neoforge/build/libs/*.jar
+          if-no-files-found: warn
+
+      - name: Upload build reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            **/build/reports/**
+            **/build/tmp/compileJava/**
+          if-no-files-found: ignore

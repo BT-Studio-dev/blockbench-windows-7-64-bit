@@ -1,0 +1,60 @@
+name: Build Linux installers
+
+on:
+  push:
+    branches:
+      - "**"
+
+jobs:
+  build-linux:
+    if: contains(github.event.head_commit.message, 'ci-build')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      artifact-metadata: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install rpm
+        run: sudo apt-get update && sudo apt-get install -y rpm
+
+      # Capture the output and turn any failure into an ::error:: annotation.
+      # `|| status=$?` keeps the step running even when the build aborts, so the
+      # annotation is always emitted instead of an opaque "exit code 1".
+      - name: Publish Linux build
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_BUILDER_CACHE: ${{ github.workspace }}/.cache/electron-builder
+        run: |
+          set -uo pipefail
+          status=0
+          npm run publish-linux > /tmp/linux-build.log 2>&1 || status=$?
+          echo "::group::npm run publish-linux (exit $status)"
+          cat /tmp/linux-build.log || true
+          echo "::endgroup::"
+          if [ "$status" -ne 0 ]; then
+            reason=$(grep -iE "error|⨯|Cannot|ENOENT|failed" /tmp/linux-build.log | tail -n 5 | tr "\n" " " | cut -c1-900)
+            echo "::error::npm run publish-linux failed (exit $status): $reason"
+            exit "$status"
+          fi
+
+      - name: Upload Linux artifacts
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: blockbench-linux
+          path: |
+            dist-electron/*.deb
+            dist-electron/*.AppImage
+          if-no-files-found: warn
+          retention-days: 14

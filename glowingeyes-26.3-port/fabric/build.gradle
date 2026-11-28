@@ -1,0 +1,55 @@
+plugins {
+    id 'multiloader-loader'
+    id 'dev.architectury.loom-no-remap'
+}
+
+dependencies {
+    minecraft "com.mojang:minecraft:${minecraft_version}"
+    // No mappings line. From 26.x the Minecraft jar ships unobfuscated, so
+    // there is nothing to map: Loom's officialMojangMappings() tries to fetch
+    // Mojang's obfuscation map for the version, which does not exist for 26.3,
+    // and configuration dies with "Failed to find official mojang mappings for
+    // 26.3". Architectury's loom-no-remap exists for this exact reason.
+
+    // modApi / modImplementation / modCompileOnly are configurations that only
+    // exist when Loom has mappings to remap through. Under loom-no-remap they
+    // are simply absent: "Could not find method modApi()". The mod jars are
+    // already in their shipped, unremapped form, so the plain counterparts are
+    // the correct equivalents rather than a downgrade.
+    include api("org.ladysnake.cardinal-components-api:cardinal-components-base:${cca_version}")
+    include implementation("org.ladysnake.cardinal-components-api:cardinal-components-entity:${cca_version}")
+
+    // The three compatibility integrations (Flashback, Female Gender, ReplayMod)
+    // are switched off for this port; see disabled-for-26.3/. Flashback could not
+    // be processed at all -- its access widener is written in intermediary names,
+    // which do not exist once the game ships unobfuscated -- and all three are
+    // optional integrations with third-party renderers that would need their own
+    // 26.3 builds. They are not on the path to the mod working.
+
+    implementation "net.fabricmc:fabric-loader:${fabric_loader_version}"
+    implementation "net.fabricmc.fabric-api:fabric-api:${fabric_version}"
+}
+
+loom {
+    def aw = project(':common').file("src/main/resources/${mod_id}.accesswidener")
+    if (aw.exists()) {
+        accessWidenerPath.set(aw)
+    }
+    mixin {
+        defaultRefmapName.set("${mod_id}.refmap.json")
+    }
+    runs {
+        client {
+            client()
+            setConfigName('Fabric Client')
+            ideConfigGenerated(true)
+            runDir('runs/client')
+        }
+        server {
+            server()
+            setConfigName('Fabric Server')
+            ideConfigGenerated(true)
+            runDir('runs/server')
+        }
+    }
+}

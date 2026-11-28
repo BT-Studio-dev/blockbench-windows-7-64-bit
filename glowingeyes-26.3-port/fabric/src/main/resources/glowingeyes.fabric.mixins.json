@@ -1,0 +1,13 @@
+{
+  "package": "me.andreasmelone.glowingeyes.fabric.mixin",
+  "client": [
+    "_compat-disabled-see-notes"
+  ],
+  "plugin": "me.andreasmelone.glowingeyes.GlowingEyesMixinPlugin",
+  "required": true,
+  "refmap": "${mod_id}.refmap.json",
+  "compatibilityLevel": "JAVA_21",
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
