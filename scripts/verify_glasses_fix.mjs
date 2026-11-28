@@ -1,13 +1,18 @@
 #!/usr/bin/env node
-// Guard against shipping a pack that claims to fix the glasses z-fight and does not.
+// Guard that the built packs carry Fresh Moves' own brow geometry, unmodified.
 //
-// This check exists because that already happened. The fix was verified against
-// a copy and then the packs were rebuilt from pack-source, which had never been
-// patched, so all 18 releases were labelled "glasses fix" while still carrying
-// the old brow planes. A grep for "0.05" made it look fixed because the value
-// appeared elsewhere in a 174 KB file.
+// Filename note: this is still verify_glasses_fix.mjs because the CI workflow and
+// the README reference it, but it no longer checks a fix -- there is no fix. It
+// pins the upstream values so an accidental edit fails CI.
 //
-// So this reads the built zips and asserts the exact numbers, per box.
+// History, because it matters: this check used to assert a "fix" that moved
+// right_brow5-8 to 0.05 and left_brow5-8 to -0.35. In game that produced solid
+// bars standing off the face -- the eyebrows in this model are 0.25 deep, so
+// translating them about moves a slab, it does not close a coplanar gap. The
+// edit has been reverted and the packs now ship the author's original numbers.
+//
+// So this asserts the ORIGINAL values, per box, read out of the built zips. If a
+// future edit moves them, CI fails rather than shipping it.
 import fs from 'node:fs';
 import path from 'node:path';
 import zlib from 'node:zlib';
@@ -20,11 +25,11 @@ const builds = process.argv[2]
 	? path.resolve(process.argv[2])
 	: path.join(root, 'fresh-moves-glasses', 'builds');
 
-// Right brows sit at z=0.05 inside a node translated -4.4; left at -0.35 inside
-// -4. Left and right are deliberately different -- they are not a typo.
+// The values Fresh Moves ships. Right and left are deliberately different --
+// they compensate for the mirrored translate on the left, and are not a typo.
 const EXPECT = {
-	right_brow5: 0.05, right_brow6: 0.05, right_brow7: 0.05, right_brow8: 0.05,
-	left_brow5: -0.35, left_brow6: -0.35, left_brow7: -0.35, left_brow8: -0.35,
+	right_brow5: -0.15, right_brow6: -0.15, right_brow7: -0.15, right_brow8: -0.15,
+	left_brow5: -0.55, left_brow6: -0.55, left_brow7: -0.55, left_brow8: -0.55,
 };
 // brow9 must NOT move: it is a different row and already correct.
 const UNTOUCHED = { right_brow9: -0.15, left_brow9: -0.15 };
@@ -111,7 +116,7 @@ for (const file of zips) {
 }
 
 if (failed) {
-	console.error(`[glasses-fix] FAILED: ${failed} of ${zips.length} packs are not carrying the fix`);
+	console.error(`[glasses-fix] FAILED: ${failed} of ${zips.length} packs do not match Fresh Moves upstream`);
 	process.exit(1);
 }
-console.log(`[glasses-fix] OK: all ${zips.length} packs carry the fix (right 5-8 at 0.05, left 5-8 at -0.35)`);
+console.log(`[glasses-fix] OK: all ${zips.length} packs carry unmodified brow geometry (right 5-8 at -0.15, left 5-8 at -0.55)`);

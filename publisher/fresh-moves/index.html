@@ -3,8 +3,8 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1">
-	<title>Fresh Moves glasses fix</title>
-	<meta name="description" content="A patched player model for Just Expressions and Fresh Moves that stops eyebrows drawing through sunglasses. One download per Minecraft version.">
+	<title>Fresh Moves + Just Expressions, repacked per Minecraft version</title>
+	<meta name="description" content="Just Expressions + Fresh Moves player models with the correct resource pack format for each Minecraft version. Model geometry is unmodified.">
 	<link rel="icon" href="/favicon.png">
 	<style>
 		:root {
@@ -69,7 +69,7 @@
 </head>
 <body>
 <main>
-	<h1>Fresh Moves glasses fix</h1>
+	<h1>Fresh Moves + Just Expressions</h1>
 	<p class="lede">
 		Just Expressions puts its eyebrow overlay planes one thousandth of a unit in
 		front of the hat layer. That is far too small for the depth buffer to resolve,
@@ -96,24 +96,32 @@
 		reported for Minecraft 26.2 and still open.
 	</p>
 
-	<h2>What the patch changes</h2>
-	<p>Eight second-layer eyebrow boxes move back, four per side. <strong>The left and right sides are not symmetric</strong> and never were &mdash; the right brow row sits in a submodel translated &minus;4.4 and the left in one translated &minus;4, so the same visual result needs different box values on each side:</p>
+	<h2>What this does and does not do</h2>
+	<p>It changes the <strong>pack format</strong> so the game accepts the pack without a
+	warning, and it does nothing else. Every model file inside is byte-identical to
+	Fresh Moves and Just Expressions as their authors ship them.</p>
 	<table>
-		<thead><tr><th>Surface</th><th>Before</th><th>After</th></tr></thead>
+		<thead><tr><th>Surface</th><th>Value</th></tr></thead>
 		<tbody>
-			<tr><td>Head face</td><td class="z">&minus;4.000</td><td class="z">&minus;4.000</td></tr>
-			<tr><td>Right brows <code>5&ndash;8</code> (in a node at &minus;4.4)</td><td class="z" style="color:var(--bad)">&minus;4.550</td><td class="z" style="color:var(--good)">&minus;4.350</td></tr>
-			<tr><td>Left brows <code>5&ndash;8</code> (in a node at &minus;4.0)</td><td class="z" style="color:var(--bad)">&minus;4.550</td><td class="z" style="color:var(--good)">&minus;4.350</td></tr>
-			<tr><td>Brow row <code>9</code></td><td class="z">&minus;4.150</td><td class="z">&minus;4.150</td></tr>
-			<tr><td>Hat layer / your glasses</td><td class="z">&minus;4.500</td><td class="z" style="color:var(--good)">&minus;4.500</td></tr>
+			<tr><td>Head face</td><td class="z">&minus;4.000</td></tr>
+			<tr><td>First-layer brows</td><td class="z">&minus;4.150</td></tr>
+			<tr><td>Second-layer brows <code>5&ndash;8</code></td><td class="z">&minus;4.550</td></tr>
+			<tr><td>Brow row <code>9</code></td><td class="z">&minus;4.150</td></tr>
+			<tr><td>Hat layer / your glasses</td><td class="z">&minus;4.500</td></tr>
 		</tbody>
 	</table>
-	<p class="note">Both sides end up at the same place &minus;4.350, which is 0.150 behind the hat plane and 0.350 behind the face. The different starting values are why a naive find-and-replace on <code>&minus;0.55</code> would also have moved the first-layer brows, which were already correct.</p>
-	<div class="callout good">
-		<p><strong>The hat layer is untouched.</strong> Your glasses keep their geometry and size. Only the eyebrows recede, giving 0.15 clearance from the hat in front and 0.35 behind them.</p>
-	</div>
 	<div class="callout bad">
-		<p><strong>If you downloaded a pack before this page existed, throw it away.</strong> The first attempt raised the hat layer's <code>inflate</code> from 0.5 to 1.6, not realising OptiFine's inflate expands in both directions. That put the hat front at &minus;5.600 and made it 24&nbsp;percent oversized, which hides the player's own glasses instead of fixing the eyebrows.</p>
+		<p><strong>Earlier versions of this page claimed a glasses fix. They were wrong.</strong>
+		Moving the second-layer brows from &minus;4.550 to &minus;4.350 did not close a
+		coplanar gap: these boxes are <strong>0.25 units deep</strong>, not flat planes, so
+		translating them moves a solid slab. In game it showed as bars standing off the
+		face. That edit has been reverted and the packs ship the original numbers.</p>
+	</div>
+	<div class="callout">
+		<p><strong>Eyebrows can still draw over sunglasses.</strong> That is
+		<a href="https://github.com/IthanMendoza/Just-Expressions/issues/5">an open
+		upstream issue</a> and this download does not solve it. What it does solve is the
+		pack being rejected or warned about on newer versions.</p>
 	</div>
 
 	<h2>Download</h2>
