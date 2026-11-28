@@ -1,9 +1,6 @@
 package me.andreasmelone.glowingeyes.client.gui;
 
-import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.renderpearl.api.CommandEncoder;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.logging.LogUtils;
 import me.andreasmelone.glowingeyes.client.component.eyes.ClientGlowingEyesComponent;
 import me.andreasmelone.glowingeyes.client.gui.button.TintedOverlayImageButton;
