@@ -1,7 +1,7 @@
 package me.andreasmelone.glowingeyes.mixin.client;
 
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
-import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;

@@ -2,7 +2,7 @@ package me.andreasmelone.glowingeyes.client.gui.button;
 
 import me.andreasmelone.glowingeyes.client.util.TextureLocations;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
@@ -42,7 +42,7 @@ public class BigSelectableButton extends Button {
 
 //            Color color = new Color(this.active ? ACTIVE_COLOR : NOT_ACTIVE_COLOR);
 //            this.renderString(ctx, mc.font, color.withAlpha(this.alpha).getRGB());
-            this.renderDefaultLabel(ctx.textRendererForWidget(this, GuiGraphicsExtractorExtractor.HoveredTextEffects.NONE));
+            this.renderDefaultLabel(ctx.textRendererForWidget(this, GuiGraphicsExtractor.HoveredTextEffects.NONE));
         }
     }
 

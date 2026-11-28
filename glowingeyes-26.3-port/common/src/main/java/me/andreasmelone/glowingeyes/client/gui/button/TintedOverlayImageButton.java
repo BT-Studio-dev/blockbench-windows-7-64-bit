@@ -1,7 +1,7 @@
 package me.andreasmelone.glowingeyes.client.gui.button;
 
 import me.andreasmelone.glowingeyes.client.util.GuiUtil;
-import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.WidgetSprites;

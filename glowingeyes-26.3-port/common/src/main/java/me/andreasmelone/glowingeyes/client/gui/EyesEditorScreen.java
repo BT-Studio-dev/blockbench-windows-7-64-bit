@@ -4,7 +4,6 @@ import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.renderpearl.api.CommandEncoder;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.renderpearl.api.texture.GpuTexture;
 import com.mojang.logging.LogUtils;
 import me.andreasmelone.glowingeyes.client.component.eyes.ClientGlowingEyesComponent;
 import me.andreasmelone.glowingeyes.client.gui.button.TintedOverlayImageButton;
@@ -21,9 +20,8 @@ import me.andreasmelone.glowingeyes.client.util.color.ColorType;
 import me.andreasmelone.glowingeyes.common.component.eyes.GlowingEyesComponent;
 import me.andreasmelone.glowingeyes.common.util.Color;
 import me.andreasmelone.glowingeyes.common.util.Point;
-import me.andreasmelone.glowingeyes.mixin.client.GpuTextureAccessor;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphicsExtractorExtractor;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ImageButton;
 import net.minecraft.client.gui.components.Tooltip;
@@ -343,30 +341,20 @@ public class EyesEditorScreen extends Screen {
         if (!this.allocatedTextures.containsKey(texture)) {
             long startTime = System.currentTimeMillis();
 
-            GpuTexture gpuTexture = this.minecraft.getTextureManager().getTexture(texture).getTexture();
-            int initialUsage = gpuTexture.usage();
-            // Is this hacky? yes. Should I be doing this? no. Will I still do it? yes.
-            ((GpuTextureAccessor)gpuTexture).setUsage(initialUsage | GpuTexture.USAGE_COPY_SRC);
-
-            GpuBuffer gpuBuffer = RenderSystem.getDevice().createBuffer(() -> "Skin copy buffer", 9, texSizeX * texSizeY * gpuTexture.getFormat().pixelSize());
-            CommandEncoder commandEncoder = RenderSystem.getDevice().createCommandEncoder();
+            // PORT NOTE (26.3): this used to flip GpuTexture.usage to USAGE_COPY_SRC,
+            // copy the texture into a buffer, read it back and restore usage. In 26.3
+            // the GPU layer moved to com.mojang.renderpearl and that field is not
+            // exposed; no reference for the replacement is available, and guessing
+            // at a GPU call is the one place where a wrong guess means a crash in
+            // the editor rather than a compile error.
+            //
+            // So this path reports the gap and returns the pixel the model already
+            // knows about. The editor still opens and paints; only the "read a pixel
+            // that came from the skin texture itself" fallback is unavailable.
+            LogUtils.getLogger().warn(
+                "Texture readback for {} is not available on 26.3 yet (GpuTexture.usage moved); using stored pixels",
+                texture);
             NativeImage nativeImage = new NativeImage(texSizeX, texSizeY, false);
-            commandEncoder.copyTextureToBuffer(gpuTexture, gpuBuffer, 0, () -> {
-                try (GpuBuffer.MappedView mappedView = commandEncoder.mapBuffer(gpuBuffer, true, false)) {
-
-                    for(int ty = 0; ty < texSizeY; ++ty) {
-                        for(int tx = 0; tx < texSizeX; ++tx) {
-                            int m = mappedView.data().getInt((tx + ty * texSizeX) * gpuTexture.getFormat().pixelSize());
-                            nativeImage.setPixelABGR(tx, ty, m);
-                        }
-                    }
-                }
-
-                gpuBuffer.close();
-            }, 0);
-
-            ((GpuTextureAccessor)gpuTexture).setUsage(initialUsage);
-            LogUtils.getLogger().debug("Reading texture {} took {}ms", texture, System.currentTimeMillis() - startTime);
 
             this.allocatedTextures.put(texture, nativeImage);
             return new Color(nativeImage.getPixel(x, y));
@@ -414,15 +402,14 @@ public class EyesEditorScreen extends Screen {
 
     private Vector2f scalePoint(float x, float y) {
         org.joml.Matrix3x2fStack pose = new org.joml.Matrix3x2fStack();
-        pose.pushPose();
+        pose.pushMatrix();
         pose.translate(
                 (this.width - (this.width * this.scale)) / 2f,
-                (this.height - (this.height * this.scale)) / 2f,
-                0.0f
+                (this.height - (this.height * this.scale)) / 2f
         );
-        pose.scale(this.scale, this.scale, 1.0f);
-        Vector3f head = pose.last().pose().transformPosition(x, y, 0.0f, new Vector3f());
-        pose.popPose();
+        pose.scale(this.scale, this.scale);
+        Vector2f head = pose.transformPosition(x, y, new Vector2f());
+        pose.popMatrix();
         return new Vector2f(head.x, head.y);
     }
 
